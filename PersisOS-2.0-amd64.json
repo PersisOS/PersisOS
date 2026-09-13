@@ -115,8 +115,7 @@
         "wget",
         "git",
         "vim",
-        "htop",
-        "neofetch"
+        "htop"
     ],
     "exclude_packages": [
         "plasma-discover",
