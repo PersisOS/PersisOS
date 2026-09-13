@@ -106,9 +106,7 @@
         "unattended-upgrades",
         "sddm",
         "sddm-theme-breeze",
-        "debian-installer-launcher",
-        "installer-menu",
-        "installation-guide"
+        "debian-installer-launcher"
     ],
     "exclude_packages": [
         "plasma-discover",

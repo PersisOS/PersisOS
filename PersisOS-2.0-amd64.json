@@ -95,8 +95,6 @@
         "live-config-systemd",
         "fwupd",
         "debian-installer-launcher",
-        "installer-menu",
-        "installation-guide",
         "pkexec",
         "polkitd",
         "parted",

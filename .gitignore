@@ -1,15 +1,32 @@
 ```
 # Build artifacts
-dist/
-build/
-target/
+*.iso
+*.img
+*.bin
+*.exe
+*.dll
+*.so
+*.a
+*.o
+*.obj
+*.out
 
 # Dependencies
 node_modules/
-venv/
 .venv/
+venv/
 __pycache__/
-*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+*.swo
 
 # Environment
 .env
@@ -19,20 +36,10 @@ __pycache__/
 # Editors
 .vscode/
 .idea/
-*.swp
-*.swo
 
-# OS
+# OS specific
 .DS_Store
 Thumbs.db
-
-# Logs
-*.log
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
 
 # Compressed files
 *.zip
