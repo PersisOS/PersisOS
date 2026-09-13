@@ -1,55 +1,66 @@
-*.sh.bak
-*.sh~
-*.log
-*.tmp
-*.swp
-*~
+```
+# Calamares build artifacts
+assets/calamares/build/
+assets/calamares/dist/
 
-# Build artifacts
+# Build scripts output
 build/
 dist/
-target/
-
-# Dependencies
-node_modules/
-.venv/
-venv/
-__pycache__/
 *.egg-info/
 
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Python
-__pycache__/
+# Python artifacts
 *.pyc
+__pycache__/
 *.pyo
 *.pyd
-.Python
-*.so
 
 # Logs
 *.log
 
-# Temp files
-*.tmp
-*~
+# Environment files
+.env
+.env.local
+*.env.*
 
-output/
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
+
+# MyPy cache
+.mypy_cache/
+
+# Pytest cache
+.pytest_cache/
+
+# Compressed archives
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
+```

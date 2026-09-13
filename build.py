@@ -421,13 +421,131 @@ class LiveBuilder:
                 )
             except BuildError as exc:
                 raise BuildError(
-                    "Calamares/live-image package preflight failed. Check the "
+                    "Package preflight failed. Check the "
                     "configured package names and enabled APT components.\n" + str(exc)
                 ) from exc
             self._chroot(
                 ["apt-get", "install", "-y"] + pkgs,
                 extra_env=env,
             )
+
+    # ------------------------------------------------------------------
+    # Debian Installer integration
+    # ------------------------------------------------------------------
+
+    def setup_debian_installer(self):
+        """Set up Debian Installer with preseed configuration."""
+        with build_step("Setting up Debian Installer"):
+            # Install debian-installer-launcher and related packages
+            di_packages = [
+                "debian-installer-launcher",
+                "installer-menu",
+                "installation-guide",
+            ]
+            env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
+            self._chroot(
+                ["apt-get", "install", "-y"] + di_packages,
+                extra_env=env,
+            )
+            
+            # Create preseed directory structure
+            preseed_dir = self.chroot / "preseed"
+            preseed_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate main preseed file
+            self._generate_preseed_file(preseed_dir / "persisos.preseed")
+            
+            # Copy preseed to ISO root for early access
+            iso_preseed = self.iso_root / "preseed"
+            iso_preseed.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(preseed_dir / "persisos.preseed", iso_preseed / "persisos.preseed")
+            
+            # Create installer launcher desktop file
+            self._create_installer_desktop()
+
+    def _generate_preseed_file(self, preseed_path: Path):
+        """Generate a preseed configuration file for automated installation."""
+        hostname = self.cfg.get("hostname") or self.cfg["distro_name"].lower()
+        locale = self.cfg["locale"]
+        timezone = self.cfg["timezone"]
+        username = self.cfg.get("live_username", "user")
+        
+        preseed_content = f'''# Preseed configuration for PersisOS
+# Based on Debian Installer preseed format
+
+### Locale and Keyboard
+d-i debian-installer/locale string {locale}
+d-i console-setup/ask_detect boolean false
+d-i keyboard-configuration/xkb-keymap select us
+
+### Network Configuration
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string {hostname}
+d-i netcfg/get_domain string local
+
+### Clock and Timezone
+d-i clock-setup/utc boolean true
+d-i time/zone string {timezone}
+d-i clock-setup/ntp boolean true
+
+### Partitioning - Use entire disk with LVM guided
+d-i partman-auto/method string lvm
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+
+### Package Selection
+tasksel tasksel/first multiselect standard, ssh-server
+d-i pkgsel/include string firmware-linux firmware-linux-nonfree network-manager sudo
+d-i pkgsel/install-language-support boolean false
+d-i pkgsel/update-policy select none
+
+### User Setup
+d-i passwd/user-fullname string PersisOS User
+d-i passwd/username string {username}
+d-i passwd/user-password password persisos
+d-i passwd/user-password-again password persisos
+d-i passwd/root-login boolean false
+
+### GRUB Bootloader
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i grub-installer/bootdev string default
+d-i grub-installer/force-efi-extra-removable boolean true
+
+### Finish Installation
+d-i finish-install/reboot_in_progress note
+'''
+        preseed_path.write_text(preseed_content)
+        print(f"  Generated preseed file: {preseed_path}")
+
+    def _create_installer_desktop(self):
+        """Create a desktop file to launch the Debian Installer from the live session."""
+        desktop_content = '''[Desktop Entry]
+Type=Application
+Name=Install PersisOS
+Comment=Launch the Debian Installer to install PersisOS to your hard drive
+Exec=/usr/lib/debian-installer-launcher/launcher
+Icon=system-install
+Terminal=false
+Categories=System;
+'''
+        # Create in chroot for installed system
+        apps_dir = self.chroot / "usr" / "share" / "applications"
+        apps_dir.mkdir(parents=True, exist_ok=True)
+        (apps_dir / "install-persisos.desktop").write_text(desktop_content)
+        
+        # Also create in skel for new users
+        skel_apps = self.chroot / "etc" / "skel" / "Desktop"
+        skel_apps.mkdir(parents=True, exist_ok=True)
+        installer_desktop = skel_apps / "Install PersisOS.desktop"
+        installer_desktop.write_text(desktop_content)
+        installer_desktop.chmod(0o755)
+        
+        print("  Created installer desktop launcher")
 
     # ------------------------------------------------------------------
     # User accounts
@@ -561,7 +679,7 @@ class LiveBuilder:
                     p.unlink(missing_ok=True)
 
             # Every live boot and installed system must receive its own ID.
-            # Calamares' machineid module creates the target system's value.
+            # The Debian Installer generates the target system's value.
             machine_id = self.chroot / "etc" / "machine-id"
             machine_id.parent.mkdir(parents=True, exist_ok=True)
             machine_id.write_text("")
@@ -880,6 +998,7 @@ menuentry "{distro} {version} (live, debug)" {{
                 self.configure_apt()
                 self.pre_chroot_scripts()
                 self.install_packages()
+                self.setup_debian_installer()
                 self.configure_users()
                 self.configure_system()
                 self.post_install_scripts()
