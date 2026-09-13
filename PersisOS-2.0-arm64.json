@@ -106,12 +106,18 @@
         "unattended-upgrades",
         "sddm",
         "sddm-theme-breeze",
-        "debian-installer-launcher"
+        "debian-installer-launcher",
+        "curl",
+        "wget",
+        "git",
+        "vim",
+        "htop"
     ],
     "exclude_packages": [
         "plasma-discover",
         "plasma-welcome",
-        "desktop-base"
+        "desktop-base",
+        "thunderbird"
     ],
     "pre_chroot_scripts": [
         "#!/bin/bash\nset -e\nmkdir -p \"$ROOTFS/.temp_assets\"\ncp -r ./assets/persisos-plasma-theme \"$ROOTFS/.temp_assets/\"\ninstall -Dm 0644 ./persisos.svg \"$ROOTFS/.temp_assets/persisos-plasma-theme/usr/share/icons/hicolor/scalable/apps/persisos.svg\"\n"

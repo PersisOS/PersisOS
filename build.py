@@ -366,6 +366,7 @@ class LiveBuilder:
                 self._run_script(script, rootfs_env=True)
 
     def post_install_scripts(self):
+        """Run post-install scripts."""
         for script in self.cfg.get("post_install_scripts", []):
             with build_step(f"Post-install script: {script}"):
                 self._run_script(script)
@@ -434,32 +435,48 @@ class LiveBuilder:
     # ------------------------------------------------------------------
 
     def setup_debian_installer(self):
-        """Set up Debian Installer with preseed configuration."""
+        """Set up Debian Installer with preseed configuration based on distro type."""
         with build_step("Setting up Debian Installer"):
-            # Install debian-installer-launcher
-            di_packages = [
-                "debian-installer-launcher",
-            ]
-            env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-            self._chroot(
-                ["apt-get", "install", "-y"] + di_packages,
-                extra_env=env,
-            )
+            # Determine if this is a server or desktop build based on distro_name
+            distro_name = self.cfg.get("distro_name", "").lower()
+            is_server = "server" in distro_name
             
-            # Create preseed directory structure
-            preseed_dir = self.chroot / "preseed"
-            preseed_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Generate main preseed file
-            self._generate_preseed_file(preseed_dir / "persisos.preseed")
-            
-            # Copy preseed to ISO root for early access
-            iso_preseed = self.iso_root / "preseed"
-            iso_preseed.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(preseed_dir / "persisos.preseed", iso_preseed / "persisos.preseed")
-            
-            # Create installer launcher desktop file
-            self._create_installer_desktop()
+            # Install debian-installer-launcher only for desktop builds
+            if not is_server:
+                di_packages = [
+                    "debian-installer-launcher",
+                ]
+                env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
+                self._chroot(
+                    ["apt-get", "install", "-y"] + di_packages,
+                    extra_env=env,
+                )
+                
+                # Create preseed directory structure
+                preseed_dir = self.chroot / "preseed"
+                preseed_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Generate main preseed file
+                self._generate_preseed_file(preseed_dir / "persisos.preseed")
+                
+                # Copy preseed to ISO root for early access
+                iso_preseed = self.iso_root / "preseed"
+                iso_preseed.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(preseed_dir / "persisos.preseed", iso_preseed / "persisos.preseed")
+                
+                # Create installer launcher desktop file
+                self._create_installer_desktop()
+            else:
+                print("  Skipping graphical installer setup for server edition")
+                # Server editions still get preseed for automated installs, but no GUI launcher
+                preseed_dir = self.chroot / "preseed"
+                preseed_dir.mkdir(parents=True, exist_ok=True)
+                self._generate_preseed_file(preseed_dir / "persisos.preseed")
+                
+                # Copy preseed to ISO root for early access
+                iso_preseed = self.iso_root / "preseed"
+                iso_preseed.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(preseed_dir / "persisos.preseed", iso_preseed / "persisos.preseed")
 
     def _generate_preseed_file(self, preseed_path: Path):
         """Generate a preseed configuration file for automated installation."""
