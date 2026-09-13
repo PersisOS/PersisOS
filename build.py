@@ -436,11 +436,9 @@ class LiveBuilder:
     def setup_debian_installer(self):
         """Set up Debian Installer with preseed configuration."""
         with build_step("Setting up Debian Installer"):
-            # Install debian-installer-launcher and related packages
+            # Install debian-installer-launcher
             di_packages = [
                 "debian-installer-launcher",
-                "installer-menu",
-                "installation-guide",
             ]
             env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
             self._chroot(
