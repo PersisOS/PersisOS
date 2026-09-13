@@ -1,50 +1,40 @@
 ```
-# Calamares build artifacts
-assets/calamares/build/
-assets/calamares/dist/
-
-# Build scripts output
-build/
+# Build artifacts
 dist/
+build/
+target/
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
 *.egg-info/
 
-# Python artifacts
-*.pyc
-__pycache__/
-*.pyo
-*.pyd
-
-# Logs
-*.log
-
-# Environment files
+# Environment
 .env
 .env.local
 *.env.*
 
-# IDE files
+# Editors
 .vscode/
 .idea/
 *.swp
 *.swo
-*.tmp
 
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Coverage reports
+# Logs
+*.log
+
+# Coverage
 coverage/
 htmlcov/
 .coverage
 
-# MyPy cache
-.mypy_cache/
-
-# Pytest cache
-.pytest_cache/
-
-# Compressed archives
+# Compressed files
 *.zip
 *.gz
 *.tar
@@ -63,4 +53,8 @@ htmlcov/
 *.Z
 *.lz
 *.lzo
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
 ```
