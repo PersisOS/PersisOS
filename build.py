@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-PersisOS live ISO builder
+Generic live ISO builder for Debian-based distributions
 """
 
 import argparse
@@ -450,13 +450,15 @@ class LiveBuilder:
             preseed_dir = self.chroot / "preseed"
             preseed_dir.mkdir(parents=True, exist_ok=True)
             
-            # Generate main preseed file
-            self._generate_preseed_file(preseed_dir / "persisos.preseed")
+            # Generate main preseed file with distro-specific name
+            distro_lower = self.cfg["distro_name"].lower().replace(' ', '-')
+            preseed_filename = f"{distro_lower}.preseed"
+            self._generate_preseed_file(preseed_dir / preseed_filename)
             
             # Copy preseed to ISO root for early access
             iso_preseed = self.iso_root / "preseed"
             iso_preseed.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(preseed_dir / "persisos.preseed", iso_preseed / "persisos.preseed")
+            shutil.copy2(preseed_dir / preseed_filename, iso_preseed / preseed_filename)
             
             # Create installer launcher desktop file
             self._create_installer_desktop()
@@ -467,8 +469,9 @@ class LiveBuilder:
         locale = self.cfg["locale"]
         timezone = self.cfg["timezone"]
         username = self.cfg.get("live_username", "user")
+        distro_name = self.cfg["distro_name"]
         
-        preseed_content = f'''# Preseed configuration for PersisOS
+        preseed_content = f'''# Preseed configuration for {distro_name}
 # Based on Debian Installer preseed format
 
 ### Locale and Keyboard
@@ -502,10 +505,8 @@ d-i pkgsel/install-language-support boolean false
 d-i pkgsel/update-policy select none
 
 ### User Setup
-d-i passwd/user-fullname string PersisOS User
+d-i passwd/user-fullname string {distro_name} User
 d-i passwd/username string {username}
-d-i passwd/user-password password persisos
-d-i passwd/user-password-again password persisos
 d-i passwd/root-login boolean false
 
 ### GRUB Bootloader
@@ -522,10 +523,11 @@ d-i finish-install/reboot_in_progress note
 
     def _create_installer_desktop(self):
         """Create a desktop file to launch the Debian Installer from the live session."""
-        desktop_content = '''[Desktop Entry]
+        distro_name = self.cfg["distro_name"]
+        desktop_content = f'''[Desktop Entry]
 Type=Application
-Name=Install PersisOS
-Comment=Launch the Debian Installer to install PersisOS to your hard drive
+Name=Install {distro_name}
+Comment=Launch the Debian Installer to install {distro_name} to your hard drive
 Exec=/usr/lib/debian-installer-launcher/launcher
 Icon=system-install
 Terminal=false
@@ -534,12 +536,13 @@ Categories=System;
         # Create in chroot for installed system
         apps_dir = self.chroot / "usr" / "share" / "applications"
         apps_dir.mkdir(parents=True, exist_ok=True)
-        (apps_dir / "install-persisos.desktop").write_text(desktop_content)
+        desktop_filename = f"install-{distro_name.lower().replace(' ', '-')}.desktop"
+        (apps_dir / desktop_filename).write_text(desktop_content)
         
         # Also create in skel for new users
         skel_apps = self.chroot / "etc" / "skel" / "Desktop"
         skel_apps.mkdir(parents=True, exist_ok=True)
-        installer_desktop = skel_apps / "Install PersisOS.desktop"
+        installer_desktop = skel_apps / f"Install {distro_name}.desktop"
         installer_desktop.write_text(desktop_content)
         installer_desktop.chmod(0o755)
         
@@ -871,9 +874,24 @@ menuentry "{distro} {version} (live, debug)" {{
                     Path(early_cfg_path).unlink(missing_ok=True)
 
                 # Concatenate cdboot.img + core.img → bios.img
+                # Ensure the boot signature (0x55AA) is at offset 0x1FE (510)
                 with open(bios_core, "wb") as out_f:
-                    out_f.write(cdboot.read_bytes())
+                    cdboot_data = cdboot.read_bytes()
+                    # Pad cdboot.img to exactly 512 bytes if needed
+                    if len(cdboot_data) < 512:
+                        cdboot_data = cdboot_data.ljust(512, b'\x00')
+                    out_f.write(cdboot_data[:512])
                     out_f.write(bios_core_raw.read_bytes())
+                
+                # Verify and fix boot signature at offset 0x1FE
+                with open(bios_core, "r+b") as f:
+                    f.seek(510)
+                    sig = f.read(2)
+                    if sig != b'\x55\xAA':
+                        # Write correct boot signature
+                        f.seek(510)
+                        f.write(b'\x55\xAA')
+                
                 bios_core_raw.unlink(missing_ok=True)
 
                 # Locate boot_hybrid.img for MBR
@@ -1021,7 +1039,7 @@ menuentry "{distro} {version} (live, debug)" {{
 
 
 def main():
-    parser = argparse.ArgumentParser(description="PersisOS live ISO builder")
+    parser = argparse.ArgumentParser(description="Generic live ISO builder for Debian-based distributions")
     parser.add_argument("config", help="Path to JSON build config")
     parser.add_argument(
         "--workdir", default=None, help="Working directory (default: temp dir)"
