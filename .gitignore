@@ -1,25 +1,40 @@
 ```
-# Configuration and system files
-*.conf.user
+# Compiled and build artifacts
+*.o
+*.obj
+*.out
 
-# Build artifacts and temporary files
-*.tmp
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+*.egg-info/
+dist/
+build/
+target/
+.gradle/
+
+# Logs and temp files
 *.log
+*.tmp
+*.swp
+*.swo
 
-# Environment and cache
+# Environment
 .env
 .env.local
 *.env.*
 
-# Editors and IDE
+# Editors
 .vscode/
 .idea/
 
-# OS specific
+# System files
 .DS_Store
 Thumbs.db
 
-# Coverage and testing
+# Coverage
 coverage/
 htmlcov/
 .coverage

@@ -3,7 +3,7 @@ LookAndFeelPackage=org.persisos.desktop
 
 [Icons]
 Theme=breeze
-ColorSet=DarkBlue
+ColorSet=PersisOSBlue
 
 [Colors:Selection]
 BackgroundNormal=#3daee9
@@ -17,17 +17,33 @@ ForegroundNormal=#232629
 BackgroundNormal=#eff0f1
 ForegroundNormal=#232629
 
+[Colors:PersisOSBlue]
+BackgroundNormal=#1b1d1f
+ForegroundNormal=#ffffff
+DecorationFocus=#3daee9
+DecorationHover=#3daee9
+
 [General]
 widgetStyle=breeze
-colorScheme=BreezeLight
+colorScheme=BreezeDark
 shadingFraction=0.5
-font=Sans Serif,10,-1,5,50,0,0,0,0,0
+font=Noto Sans,10,-1,5,400,0,0,0,0,0
 forceFontDPI=true
+fixed=Monospace,10,-1,5,400,0,0,0,0,0
+small=Sans Serif,9,-1,5,400,0,0,0,0,0
+toolbarFont=Sans Serif,10,-1,5,400,0,0,0,0,0
+menuFont=Sans Serif,10,-1,5,400,0,0,0,0,0
+windowFont=Sans Serif,10,-1,5,400,0,0,0,0,0
 
 [WM]
 activeBlend=#3daee9
 activeBackground=#1b1d1f
 activeForeground=#ffffff
 inactiveBlend=#767676
-inactiveBackground=#1b1d1f
+inactiveBackground=#2a2d2f
 inactiveForeground=#cfcfcf
+frame=#1b1d1f
+titlebarGradient=true
+
+[Desktop Entry]
+IconTheme=breeze

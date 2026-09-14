@@ -105,7 +105,6 @@
         "nftables",
         "unattended-upgrades",
         "sddm",
-        "sddm-theme-breeze",
         "debian-installer-launcher"
     ],
     "exclude_packages": [
@@ -115,7 +114,8 @@
         "kwallet-pam",
         "kwalletmanager",
         "kde-config-welcome",
-        "plasma-browser-integration"
+        "plasma-browser-integration",
+        "sddm-theme-breeze"
     ],
     "pre_chroot_scripts": [
         "#!/bin/bash\nset -e\nmkdir -p \"$ROOTFS/.temp_assets\"\ncp -r ./assets/persisos-plasma-theme \"$ROOTFS/.temp_assets/\"\ninstall -Dm 0644 ./persisos.svg \"$ROOTFS/.temp_assets/persisos-plasma-theme/usr/share/icons/hicolor/scalable/apps/persisos.svg\"\n"
