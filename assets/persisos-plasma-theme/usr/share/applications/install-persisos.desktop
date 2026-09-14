@@ -1,9 +1,9 @@
 [Desktop Entry]
 Type=Application
-Name=Install PersisOS
+Name=Install @DISTRO_NAME@
 GenericName=System Installer
-Comment=Install PersisOS on this computer
-Icon=persisos
+Comment=Install @DISTRO_NAME@ on this computer
+Icon=@DISTRO_LOGO@
 TryExec=debian-installer-launcher
 Exec=debian-installer-launcher
 Terminal=false

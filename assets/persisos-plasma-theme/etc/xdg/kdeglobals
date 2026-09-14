@@ -3,3 +3,21 @@ LookAndFeelPackage=org.persisos.desktop
 
 [Icons]
 Theme=breeze
+ColorSet=DarkBlue
+
+[Colors:Selection]
+BackgroundNormal=#3daee9
+ForegroundNormal=#ffffff
+
+[Colors:Button]
+BackgroundNormal=#eff0f1
+ForegroundNormal=#232629
+
+[Colors:Window]
+BackgroundNormal=#eff0f1
+ForegroundNormal=#232629
+
+[General]
+widgetStyle=breeze
+colorScheme=BreezeLight
+shadingFraction=0.5
