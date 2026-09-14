@@ -3,14 +3,14 @@
     "KPlugin": {
         "Authors": [
             {
-                "Name": "PersisOS"
+                "Name": "PersisOS Team"
             }
         ],
         "Category": "",
-        "Description": "The default PersisOS desktop look and feel: top panel layout, Mountain Lake wallpaper and splash screen.",
+        "Description": "The default PersisOS desktop look and feel with custom branding, accent colors, and smooth animations.",
         "Id": "org.persisos.desktop",
         "License": "MIT",
-        "Name": "PersisOS 2.0",
+        "Name": "PersisOS",
         "Version": "2.0"
     },
     "X-Plasma-MainScript": "contents/layouts/org.kde.plasma.desktop-layout.js"

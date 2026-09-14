@@ -1,3 +1,5 @@
 [General]
 Name=PersisOS
 LogoPath=/usr/share/icons/hicolor/scalable/apps/persisos.svg
+Homepage=https://github.com/arshavirm/PersisOS
+BugReportURL=https://github.com/arshavirm/PersisOS/issues

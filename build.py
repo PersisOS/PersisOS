@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Generic live ISO builder for Debian-based distributions
+Generic live ISO builder for Debian-based distributions.
+
+This script builds a bootable live ISO image from a JSON configuration file.
+It supports both BIOS and UEFI boot, Ventoy compatibility, and automated
+installation via Debian Installer preseed.
 """
 
 import argparse
+import contextlib
 import json
 import os
 import re
@@ -13,9 +18,10 @@ import sys
 import tempfile
 from pathlib import Path
 
-# ---------------------------------------------------------------------------
-# Architecture maps
-# ---------------------------------------------------------------------------
+
+# =============================================================================
+# Architecture and Package Mappings
+# =============================================================================
 
 KERNEL_PACKAGES = {
     "amd64": "linux-image-amd64",
@@ -57,10 +63,6 @@ HOST_BUILD_TOOLS = [
     "grub-mkimage",
     "mkfs.vfat",
 ]
-
-# ---------------------------------------------------------------------------
-# GRUB module lists — self-contained and Ventoy-safe
-# ---------------------------------------------------------------------------
 
 GRUB_BIOS_MODULES = [
     "biosdisk",
@@ -115,12 +117,14 @@ GRUB_EFI_MODULES = [
     "halt",
 ]
 
-# ---------------------------------------------------------------------------
-# Error handling helpers
-# ---------------------------------------------------------------------------
+
+# =============================================================================
+# Error Handling
+# =============================================================================
 
 
 class BuildError(Exception):
+    """Exception raised when a build step fails."""
     pass
 
 
@@ -139,41 +143,36 @@ def run(cmd, **kwargs):
     return result
 
 
+@contextlib.contextmanager
 def build_step(name):
     """Context manager that prints step banners."""
-    import contextlib
-
-    @contextlib.contextmanager
-    def _ctx():
-        print(f"\n{'='*60}")
-        print(f"  {name}")
-        print(f"{'='*60}")
-        try:
-            yield
-        except BuildError:
-            raise
-        except Exception as exc:
-            raise BuildError(f"Step '{name}' failed: {exc}") from exc
-
-    return _ctx()
+    print(f"\n{'='*60}")
+    print(f"  {name}")
+    print(f"{'='*60}")
+    try:
+        yield
+    except BuildError:
+        raise
+    except Exception as exc:
+        raise BuildError(f"Step '{name}' failed: {exc}") from exc
 
 
 def require_root():
+    """Ensure the script is running as root."""
     if os.geteuid() != 0:
         raise BuildError("This script must be run as root.")
 
 
 def require_tool(name):
+    """Ensure a required tool is available."""
     if shutil.which(name) is None:
         raise BuildError(f"Required tool not found: {name}")
 
 
 def available_grub_modules(grub_dir: Path, requested):
     """Return requested GRUB modules that are actually shipped by Debian."""
-    available = {p.stem for p in grub_dir.glob("*.mod")}
+    available = {p.stem for p in grub_dir.glob(".mod")}
     missing = [name for name in requested if name not in available]
-    # initrd is optional in some GRUB targets; the linux module can still
-    # load an initrd from the configured path at boot.
     tolerated = {"initrd"}
     unexpected = [name for name in missing if name not in tolerated]
     if unexpected:
@@ -183,11 +182,12 @@ def available_grub_modules(grub_dir: Path, requested):
     return [name for name in requested if name in available]
 
 
-# ---------------------------------------------------------------------------
-# Config loader
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Configuration Loading
+# =============================================================================
 
 REQUIRED_KEYS = ["distro_name", "version", "debian_distro", "apt_mirror", "packages"]
+
 DEFAULTS = {
     "locale": "en_US.UTF-8",
     "timezone": "UTC",
@@ -201,10 +201,13 @@ DEFAULTS = {
     "pre_chroot_scripts": [],
     "post_install_scripts": [],
     "architecture": "amd64",
+    "installer_enabled": True,
+    "installer_preseed_options": {},
 }
 
 
 def load_config(path: str) -> dict:
+    """Load and validate the build configuration from a JSON file."""
     with open(path) as f:
         cfg = json.load(f)
 
@@ -212,17 +215,22 @@ def load_config(path: str) -> dict:
     if missing:
         raise BuildError(f"Config missing required keys: {', '.join(missing)}")
 
-    # Older configs use the shorter ``arch`` key.  Keep it compatible while
-    # exposing one canonical value to the builder.
+    # Support legacy 'arch' key
     if "architecture" not in cfg and "arch" in cfg:
         cfg["architecture"] = cfg["arch"]
+
+    # Apply defaults
     for k, v in DEFAULTS.items():
         cfg.setdefault(k, v)
+
+    # Validate architecture
     if cfg["architecture"] not in KERNEL_PACKAGES:
         raise BuildError(
             f"Unsupported architecture {cfg['architecture']!r}; "
             f"choose one of: {', '.join(sorted(KERNEL_PACKAGES))}"
         )
+
+    # Validate APT components
     components = cfg["apt_components"]
     if (
         not isinstance(components, list)
@@ -238,13 +246,14 @@ def load_config(path: str) -> dict:
     # Derive iso_volume_id from distro name if not set
     if "iso_volume_id" not in cfg:
         vol = re.sub(r"[^A-Za-z0-9_]", "_", cfg["distro_name"])[:32]
-        cfg["iso_volume_id"] = vol
+        cfg["iso_volume_id"] = vol.upper()
 
     if not re.fullmatch(r"[A-Za-z0-9_]{1,32}", cfg["iso_volume_id"]):
         raise BuildError(
             f"iso_volume_id must match [A-Za-z0-9_]{{1,32}}, got: {cfg['iso_volume_id']!r}"
         )
 
+    # Validate iso_filename if provided
     iso_filename = cfg.get("iso_filename")
     if iso_filename is not None:
         if (
@@ -257,12 +266,14 @@ def load_config(path: str) -> dict:
     return cfg
 
 
-# ---------------------------------------------------------------------------
-# LiveBuilder
-# ---------------------------------------------------------------------------
+# =============================================================================
+# LiveBuilder Class
+# =============================================================================
 
 
 class LiveBuilder:
+    """Builds a live ISO image from configuration."""
+
     def __init__(
         self, config: dict, workdir: str, outdir: str, keep_workdir: bool = False
     ):
@@ -276,11 +287,12 @@ class LiveBuilder:
         self.iso_root = self.workdir / "iso"
         self._pseudo_mounted = False
 
-    # ------------------------------------------------------------------
-    # Directory setup
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Directory Setup
+    # -------------------------------------------------------------------------
 
     def prepare_dirs(self):
+        """Create necessary directory structures."""
         with build_step("Preparing directories"):
             for d in [
                 self.chroot,
@@ -291,11 +303,12 @@ class LiveBuilder:
                 d.mkdir(parents=True, exist_ok=True)
             self.outdir.mkdir(parents=True, exist_ok=True)
 
-    # ------------------------------------------------------------------
-    # debootstrap
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Debootstrap
+    # -------------------------------------------------------------------------
 
     def run_debootstrap(self):
+        """Bootstrap a minimal Debian system."""
         with build_step("Running debootstrap"):
             cmd = ["debootstrap", "--arch", self.arch]
             if self.cfg.get("debootstrap_variant"):
@@ -308,7 +321,8 @@ class LiveBuilder:
             run(cmd)
 
     def _mount_pseudo_filesystems(self):
-        with build_step("Mounting /proc, /sys, /dev into chroot"):
+        """Mount /proc, /sys, /dev into the chroot."""
+        with build_step("Mounting pseudo filesystems"):
             self._pseudo_mounted = True
             (self.chroot / "dev" / "pts").mkdir(parents=True, exist_ok=True)
             run(["mount", "-t", "proc", "proc", str(self.chroot / "proc")])
@@ -317,10 +331,10 @@ class LiveBuilder:
             run(["mount", "--bind", "/dev/pts", str(self.chroot / "dev" / "pts")])
 
     def _unmount_pseudo_filesystems(self):
+        """Unmount pseudo filesystems from the chroot."""
         if not self._pseudo_mounted:
             return
-        with build_step("Unmounting /proc, /sys, /dev from chroot"):
-            # Reverse order, most-nested first.
+        with build_step("Unmounting pseudo filesystems"):
             for sub in ("dev/pts", "dev", "sys", "proc"):
                 path = self.chroot / sub
                 if not path.is_dir():
@@ -329,19 +343,17 @@ class LiveBuilder:
                     ["umount", str(path)], capture_output=True, text=True
                 )
                 if result.returncode != 0:
-                    # Something may still have a handle open inside the
-                    # chroot (e.g. a lingering apt/gpg process). Fall back
-                    # to a lazy unmount so cleanup never blocks the build.
                     subprocess.run(
                         ["umount", "-l", str(path)], capture_output=True, text=True
                     )
             self._pseudo_mounted = False
 
-    # ------------------------------------------------------------------
-    # APT configuration
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # APT Configuration
+    # -------------------------------------------------------------------------
 
     def configure_apt(self):
+        """Configure APT sources and update package lists."""
         with build_step("Configuring APT"):
             suite = self.cfg["debian_distro"]
             components = " ".join(self.cfg["apt_components"])
@@ -356,16 +368,18 @@ class LiveBuilder:
             (self.chroot / "etc" / "apt" / "sources.list").write_text(sources)
             self._chroot(["apt-get", "update"])
 
-    # ------------------------------------------------------------------
-    # Scripts
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Script Execution
+    # -------------------------------------------------------------------------
 
     def pre_chroot_scripts(self):
+        """Execute pre-chroot scripts."""
         for script in self.cfg.get("pre_chroot_scripts", []):
             with build_step(f"Pre-chroot script: {script}"):
                 self._run_script(script, rootfs_env=True)
 
     def post_install_scripts(self):
+        """Execute post-install scripts inside chroot."""
         for script in self.cfg.get("post_install_scripts", []):
             with build_step(f"Post-install script: {script}"):
                 self._run_script(script)
@@ -393,11 +407,12 @@ class LiveBuilder:
             self._chroot(["bash", f"/tmp/{path.name}"])
             dest.unlink(missing_ok=True)
 
-    # ------------------------------------------------------------------
-    # Package installation
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Package Installation
+    # -------------------------------------------------------------------------
 
     def install_packages(self):
+        """Install required packages into the chroot."""
         with build_step("Installing packages"):
             pkgs = list(
                 dict.fromkeys(
@@ -412,8 +427,6 @@ class LiveBuilder:
                 pkgs += ["grub-pc-bin", "grub2-common"]
 
             env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-            # Resolve the complete transaction before changing the rootfs. This
-            # turns a late apt failure into an actionable package-list error.
             try:
                 self._chroot(
                     ["apt-get", "-s", "--no-remove", "install", "-y"] + pkgs,
@@ -429,50 +442,56 @@ class LiveBuilder:
                 extra_env=env,
             )
 
-    # ------------------------------------------------------------------
-    # Debian Installer integration
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Debian Installer Integration
+    # -------------------------------------------------------------------------
 
     def setup_debian_installer(self):
         """Set up Debian Installer with preseed configuration."""
+        if not self.cfg.get("installer_enabled", True):
+            return
+
         with build_step("Setting up Debian Installer"):
-            # Install debian-installer-launcher
-            di_packages = [
-                "debian-installer-launcher",
-            ]
+            di_packages = ["debian-installer-launcher"]
             env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
             self._chroot(
                 ["apt-get", "install", "-y"] + di_packages,
                 extra_env=env,
             )
-            
+
             # Create preseed directory structure
             preseed_dir = self.chroot / "preseed"
             preseed_dir.mkdir(parents=True, exist_ok=True)
-            
-            # Generate main preseed file with distro-specific name
+
+            # Generate preseed file with distro-specific name
             distro_lower = self.cfg["distro_name"].lower().replace(' ', '-')
             preseed_filename = f"{distro_lower}.preseed"
             self._generate_preseed_file(preseed_dir / preseed_filename)
-            
+
             # Copy preseed to ISO root for early access
             iso_preseed = self.iso_root / "preseed"
             iso_preseed.mkdir(parents=True, exist_ok=True)
             shutil.copy2(preseed_dir / preseed_filename, iso_preseed / preseed_filename)
-            
+
             # Create installer launcher desktop file
             self._create_installer_desktop()
 
     def _generate_preseed_file(self, preseed_path: Path):
         """Generate a preseed configuration file for automated installation."""
-        hostname = self.cfg.get("hostname") or self.cfg["distro_name"].lower()
+        hostname = self.cfg.get("hostname") or self.cfg["distro_name"].lower().replace(' ', '-')
         locale = self.cfg["locale"]
         timezone = self.cfg["timezone"]
         username = self.cfg.get("live_username", "user")
         distro_name = self.cfg["distro_name"]
         
+        # Get installer-specific options from config
+        installer_opts = self.cfg.get("installer_preseed_options", {})
+        partition_method = installer_opts.get("partition_method", "lvm")
+        install_tasks = installer_opts.get("tasks", "standard, ssh-server")
+        extra_packages = installer_opts.get("include_packages", "firmware-linux firmware-linux-nonfree network-manager sudo")
+        
         preseed_content = f'''# Preseed configuration for {distro_name}
-# Based on Debian Installer preseed format
+# Generated automatically by build.py
 
 ### Locale and Keyboard
 d-i debian-installer/locale string {locale}
@@ -489,8 +508,8 @@ d-i clock-setup/utc boolean true
 d-i time/zone string {timezone}
 d-i clock-setup/ntp boolean true
 
-### Partitioning - Use entire disk with LVM guided
-d-i partman-auto/method string lvm
+### Partitioning
+d-i partman-auto/method string {partition_method}
 d-i partman-lvm/device_remove_lvm boolean true
 d-i partman-md/device_remove_md boolean true
 d-i partman-partitioning/confirm_write_new_label boolean true
@@ -499,8 +518,8 @@ d-i partman/confirm boolean true
 d-i partman/confirm_nooverwrite boolean true
 
 ### Package Selection
-tasksel tasksel/first multiselect standard, ssh-server
-d-i pkgsel/include string firmware-linux firmware-linux-nonfree network-manager sudo
+tasksel tasksel/first multiselect {install_tasks}
+d-i pkgsel/include string {extra_packages}
 d-i pkgsel/install-language-support boolean false
 d-i pkgsel/update-policy select none
 
@@ -522,7 +541,7 @@ d-i finish-install/reboot_in_progress note
         print(f"  Generated preseed file: {preseed_path}")
 
     def _create_installer_desktop(self):
-        """Create a desktop file to launch the Debian Installer from the live session."""
+        """Create a desktop file to launch the Debian Installer."""
         distro_name = self.cfg["distro_name"]
         desktop_content = f'''[Desktop Entry]
 Type=Application
@@ -538,21 +557,22 @@ Categories=System;
         apps_dir.mkdir(parents=True, exist_ok=True)
         desktop_filename = f"install-{distro_name.lower().replace(' ', '-')}.desktop"
         (apps_dir / desktop_filename).write_text(desktop_content)
-        
+
         # Also create in skel for new users
         skel_apps = self.chroot / "etc" / "skel" / "Desktop"
         skel_apps.mkdir(parents=True, exist_ok=True)
         installer_desktop = skel_apps / f"Install {distro_name}.desktop"
         installer_desktop.write_text(desktop_content)
         installer_desktop.chmod(0o755)
-        
+
         print("  Created installer desktop launcher")
 
-    # ------------------------------------------------------------------
-    # User accounts
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # User Accounts
+    # -------------------------------------------------------------------------
 
     def configure_users(self):
+        """Create live user and set passwords."""
         username = self.cfg.get("live_username")
         if not username:
             return
@@ -617,11 +637,12 @@ Categories=System;
             return
         self._chroot(["chpasswd"], input=f"{username}:{password}\n")
 
-    # ------------------------------------------------------------------
-    # System configuration
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # System Configuration
+    # -------------------------------------------------------------------------
 
     def configure_system(self):
+        """Configure locale, timezone, hostname, etc."""
         with build_step("Configuring system"):
             # Locale
             locale = self.cfg["locale"]
@@ -647,7 +668,7 @@ Categories=System;
             (self.chroot / "etc" / "timezone").write_text(tz + "\n")
 
             # Hostname
-            hostname = self.cfg.get("hostname") or self.cfg["distro_name"].lower()
+            hostname = self.cfg.get("hostname") or self.cfg["distro_name"].lower().replace(' ', '-')
             (self.chroot / "etc" / "hostname").write_text(hostname + "\n")
             (self.chroot / "etc" / "hosts").write_text(
                 "127.0.0.1\tlocalhost\n"
@@ -657,11 +678,12 @@ Categories=System;
                 "ff02::2\tip6-allrouters\n"
             )
 
-    # ------------------------------------------------------------------
-    # Chroot cleanup
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Chroot Cleanup
+    # -------------------------------------------------------------------------
 
     def cleanup_chroot(self):
+        """Clean up the chroot environment."""
         with build_step("Cleaning chroot"):
             env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
             self._chroot(["apt-get", "clean"], extra_env=env)
@@ -679,8 +701,7 @@ Categories=System;
                 if p.is_file():
                     p.unlink(missing_ok=True)
 
-            # Every live boot and installed system must receive its own ID.
-            # The Debian Installer generates the target system's value.
+            # Clear machine-id for unique generation on first boot
             machine_id = self.chroot / "etc" / "machine-id"
             machine_id.parent.mkdir(parents=True, exist_ok=True)
             machine_id.write_text("")
@@ -688,11 +709,12 @@ Categories=System;
                 missing_ok=True
             )
 
-    # ------------------------------------------------------------------
-    # Kernel / initrd export
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Kernel and Initrd Export
+    # -------------------------------------------------------------------------
 
     def export_kernel_and_initrd(self):
+        """Copy kernel and initrd from chroot to ISO."""
         with build_step("Exporting kernel and initrd"):
             vmlinuz_list = sorted((self.chroot / "boot").glob("vmlinuz-*"))
             initrd_list = sorted((self.chroot / "boot").glob("initrd.img-*"))
@@ -705,11 +727,12 @@ Categories=System;
             print(f"  Kernel : {vmlinuz_list[-1].name}")
             print(f"  Initrd : {initrd_list[-1].name}")
 
-    # ------------------------------------------------------------------
-    # Squashfs
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # SquashFS Build
+    # -------------------------------------------------------------------------
 
     def build_squashfs(self):
+        """Build the SquashFS filesystem."""
         with build_step("Building squashfs"):
             squashfs_path = self.iso_root / "live" / "filesystem.squashfs"
             squashfs_path.unlink(missing_ok=True)
@@ -726,24 +749,24 @@ Categories=System;
                 ]
             )
 
-    # ------------------------------------------------------------------
-    # GRUB config
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # GRUB Configuration
+    # -------------------------------------------------------------------------
 
     def write_boot_configs(self):
+        """Write GRUB configuration files."""
         with build_step("Writing GRUB configuration"):
             vol_id = self.cfg["iso_volume_id"]
             distro = self.cfg["distro_name"]
             version = self.cfg["version"]
             boot_append = self.cfg.get("boot_append", "quiet splash").strip()
 
-            grub_cfg = f"""\
+            grub_cfg = f'''\
 set default=0
 set timeout=5
 set gfxpayload=keep
 
 # Locate the ISO root — works under Ventoy, direct boot, and QEMU.
-# We try three methods in order; the first to succeed sets $root.
 if search --no-floppy --set=root --label "{vol_id}" ; then
     echo "Found ISO root by volume label: {vol_id}"
 elif search --no-floppy --set=root --file /live/filesystem.squashfs ; then
@@ -766,15 +789,15 @@ menuentry "{distro} {version} (live, debug)" {{
     linux  /live/vmlinuz boot=live components
     initrd /live/initrd
 }}
-"""
+'''
             (self.iso_root / "boot" / "grub" / "grub.cfg").write_text(grub_cfg)
             (self.iso_root / ".disk" / "info").write_text(
                 f"{distro} {version} - Live\n"
             )
 
-    # ------------------------------------------------------------------
-    # ISO assembly
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # ISO Assembly
+    # -------------------------------------------------------------------------
 
     def _find_grub_lib(self, grub_arch: str) -> Path:
         """Return the path to pre-built GRUB modules for grub_arch."""
@@ -789,27 +812,20 @@ menuentry "{distro} {version} (live, debug)" {{
         raise BuildError(f"GRUB module directory not found for arch '{grub_arch}'")
 
     def build_iso(self):
+        """Build the final ISO image."""
         with build_step("Building ISO image"):
             vol_id = self.cfg["iso_volume_id"]
             distro = self.cfg["distro_name"]
             version = self.cfg["version"]
             grub_dir = self.iso_root / "boot" / "grub"
 
-            # ----------------------------------------------------------
-            # The early config is embedded directly into the GRUB core
-            # image.  Using search here — rather than a hardcoded
-            # (cd) or (hd0) device — is what fixes the Ventoy
-            # "you must load the kernel first" error on real hardware:
-            # Ventoy remaps device handles so a hardcoded device alias
-            # never resolves, but search finds the volume by label or
-            # by the presence of a known file regardless of remapping.
-            # ----------------------------------------------------------
+            # Early config embedded into GRUB core image
             early_cfg = (
                 f'search --no-floppy --set=root --label "{vol_id}"\n'
                 f'if [ -z "$root" ]; then\n'
-                f"    search --no-floppy --set=root --file /live/filesystem.squashfs\n"
-                f"fi\n"
-                f"set prefix=($root)/boot/grub\n"
+                f'    search --no-floppy --set=root --file /live/filesystem.squashfs\n'
+                f'fi\n'
+                f'set prefix=($root)/boot/grub\n'
             )
 
             xorriso_args = [
@@ -825,9 +841,7 @@ menuentry "{distro} {version} (live, debug)" {{
                 "-joliet",
             ]
 
-            # ----------------------------------------------------------
             # BIOS boot (i386-pc) — amd64 only
-            # ----------------------------------------------------------
             if self.arch == "amd64":
                 grub_bios_arch = "i386-pc"
                 grub_bios_lib = self._find_grub_lib(grub_bios_arch)
@@ -837,7 +851,6 @@ menuentry "{distro} {version} (live, debug)" {{
                 bios_mod_dst.mkdir(parents=True, exist_ok=True)
                 for mod in Path(grub_bios_lib).glob("*.mod"):
                     shutil.copy2(mod, bios_mod_dst / mod.name)
-                # Also copy .lst files (module dependency lists)
                 for lst in Path(grub_bios_lib).glob("*.lst"):
                     shutil.copy2(lst, bios_mod_dst / lst.name)
 
@@ -882,16 +895,15 @@ menuentry "{distro} {version} (live, debug)" {{
                         cdboot_data = cdboot_data.ljust(512, b'\x00')
                     out_f.write(cdboot_data[:512])
                     out_f.write(bios_core_raw.read_bytes())
-                
+
                 # Verify and fix boot signature at offset 0x1FE
                 with open(bios_core, "r+b") as f:
                     f.seek(510)
                     sig = f.read(2)
-                    if sig != b'\x55\xAA':
-                        # Write correct boot signature
+                    if sig != b'\x55\xaa':
                         f.seek(510)
-                        f.write(b'\x55\xAA')
-                
+                        f.write(b'\x55\xaa')
+
                 bios_core_raw.unlink(missing_ok=True)
 
                 # Locate boot_hybrid.img for MBR
@@ -913,9 +925,7 @@ menuentry "{distro} {version} (live, debug)" {{
                     str(boot_hybrid),
                 ]
 
-            # ----------------------------------------------------------
             # EFI boot
-            # ----------------------------------------------------------
             if self.arch in GRUB_EFI_FORMAT:
                 efi_arch = GRUB_EFI_FORMAT[self.arch]
                 efi_binary = GRUB_EFI_BINARY[self.arch]
@@ -960,7 +970,6 @@ menuentry "{distro} {version} (live, debug)" {{
                 # Build a FAT12 ESP image and put the EFI binary inside it
                 efi_img = grub_dir / "efi.img"
                 efi_img.unlink(missing_ok=True)
-                # Size: 1.44 MB is sufficient for a standalone EFI binary
                 run(["dd", "if=/dev/zero", f"of={efi_img}", "bs=1k", "count=1440"])
                 run(["mkfs.vfat", "-F", "12", "-n", "GRUB_EFI", str(efi_img)])
                 run(["mmd", "-i", str(efi_img), "::/EFI", "::/EFI/BOOT"])
@@ -982,9 +991,7 @@ menuentry "{distro} {version} (live, debug)" {{
                     "-isohybrid-gpt-basdat",
                 ]
 
-            # ----------------------------------------------------------
             # Final xorriso invocation
-            # ----------------------------------------------------------
             iso_name = self.cfg.get("iso_filename") or (
                 f"{distro}-{version}-{self.arch}.iso"
             )
@@ -993,19 +1000,21 @@ menuentry "{distro} {version} (live, debug)" {{
             run(xorriso_args)
             print(f"\n  ISO written to: {iso_out}")
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Helper Methods
+    # -------------------------------------------------------------------------
 
     def _chroot(self, cmd, extra_env=None, **kwargs):
+        """Execute a command inside the chroot."""
         env = extra_env or os.environ.copy()
         run(["chroot", str(self.chroot)] + cmd, env=env, **kwargs)
 
-    # ------------------------------------------------------------------
-    # Main pipeline
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # Main Build Pipeline
+    # -------------------------------------------------------------------------
 
     def build(self):
+        """Execute the full build pipeline."""
         try:
             self.prepare_dirs()
             self.run_debootstrap()
@@ -1020,8 +1029,6 @@ menuentry "{distro} {version} (live, debug)" {{
                 self.post_install_scripts()
                 self.cleanup_chroot()
             finally:
-                # Must happen before mksquashfs, win or lose, or the host's
-                # real /proc, /sys, /dev get baked into the image.
                 self._unmount_pseudo_filesystems()
             self.export_kernel_and_initrd()
             self.build_squashfs()
@@ -1033,13 +1040,15 @@ menuentry "{distro} {version} (live, debug)" {{
                 shutil.rmtree(self.workdir, ignore_errors=True)
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
+# =============================================================================
+# Command Line Interface
+# =============================================================================
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generic live ISO builder for Debian-based distributions")
+    parser = argparse.ArgumentParser(
+        description="Generic live ISO builder for Debian-based distributions"
+    )
     parser.add_argument("config", help="Path to JSON build config")
     parser.add_argument(
         "--workdir", default=None, help="Working directory (default: temp dir)"
@@ -1064,7 +1073,7 @@ def main():
         builder = LiveBuilder(cfg, workdir, args.outdir, keep_workdir=args.keep_workdir)
         builder.build()
     else:
-        with tempfile.TemporaryDirectory(prefix="persisOS_build_") as tmpdir:
+        with tempfile.TemporaryDirectory(prefix="live_iso_build_") as tmpdir:
             builder = LiveBuilder(
                 cfg, tmpdir, args.outdir, keep_workdir=args.keep_workdir
             )

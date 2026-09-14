@@ -52,11 +52,23 @@ Rectangle {
         anchors.top: logo.bottom
         anchors.topMargin: 24
         anchors.horizontalCenter: logo.horizontalCenter
-        text: "welcome"
+        text: "PersisOS"
         color: "#ffffff"
-        font.pointSize: 20
+        font.pointSize: 24
+        font.letterSpacing: 3
+        font.bold: true
+        opacity: 1.0
+    }
+
+    Text {
+        anchors.top: parent.verticalCenter
+        anchors.topMargin: 120
+        anchors.horizontalCenter: logo.horizontalCenter
+        text: "Welcome"
+        color: "#3daee9"
+        font.pointSize: 14
         font.letterSpacing: 2
-        opacity: 0.9
+        opacity: 0.85
     }
 
     // Simple busy indicator: three dots that pulse in sequence
@@ -79,10 +91,10 @@ Rectangle {
                 SequentialAnimation on opacity {
                     loops: Animation.Infinite
                     running: true
-                    PauseAnimation { duration: index * 200 }
-                    NumberAnimation { to: 1; duration: 400 }
-                    NumberAnimation { to: 0.3; duration: 400 }
-                    PauseAnimation { duration: (2 - index) * 200 }
+                    PauseAnimation { duration: index * 250 }
+                    NumberAnimation { to: 1; duration: 500; easing.type: Easing.InOutQuad }
+                    NumberAnimation { to: 0.3; duration: 500; easing.type: Easing.InOutQuad }
+                    PauseAnimation { duration: (2 - index) * 250 }
                 }
             }
         }
