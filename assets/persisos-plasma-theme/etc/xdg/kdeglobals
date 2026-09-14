@@ -21,3 +21,13 @@ ForegroundNormal=#232629
 widgetStyle=breeze
 colorScheme=BreezeLight
 shadingFraction=0.5
+font=Sans Serif,10,-1,5,50,0,0,0,0,0
+forceFontDPI=true
+
+[WM]
+activeBlend=#3daee9
+activeBackground=#1b1d1f
+activeForeground=#ffffff
+inactiveBlend=#767676
+inactiveBackground=#1b1d1f
+inactiveForeground=#cfcfcf

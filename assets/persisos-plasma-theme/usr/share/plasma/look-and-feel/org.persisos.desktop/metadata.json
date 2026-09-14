@@ -7,7 +7,7 @@
             }
         ],
         "Category": "",
-        "Description": "The default PersisOS desktop look and feel with custom branding, Mountain Lake wallpaper and splash screen.",
+        "Description": "The default PersisOS desktop look and feel with custom branding, accent colors, and smooth animations.",
         "Id": "org.persisos.desktop",
         "License": "MIT",
         "Name": "PersisOS",
