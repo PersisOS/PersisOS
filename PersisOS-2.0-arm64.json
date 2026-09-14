@@ -118,7 +118,7 @@
         "sddm-theme-breeze"
     ],
     "pre_chroot_scripts": [
-        "#!/bin/bash\nset -e\nmkdir -p \"$ROOTFS/.temp_assets\"\ncp -r ./assets/persisos-plasma-theme \"$ROOTFS/.temp_assets/\"\ninstall -Dm 0644 ./persisos.svg \"$ROOTFS/.temp_assets/persisos-plasma-theme/usr/share/icons/hicolor/scalable/apps/persisos.svg\"\n"
+        "#!/bin/bash\nset -e\nmkdir -p \"$ROOTFS/.temp_assets\"\ncp -r ./assets/persisos-plasma-theme \"$ROOTFS/.temp_assets/\"\ncp -a ./assets/wallpapers \"$ROOTFS/.temp_assets/persisos-plasma-theme/usr/share/\"\ninstall -Dm 0644 ./persisos.svg \"$ROOTFS/.temp_assets/persisos-plasma-theme/usr/share/icons/hicolor/scalable/apps/persisos.svg\"\n"
     ],
     "post_install_scripts": [
         "#!/bin/bash\nset -e\necho 'Enabling core desktop and hardware services'\nsystemctl enable sddm || true\nsystemctl enable NetworkManager || true\nsystemctl enable bluetooth || true\nsystemctl enable power-profiles-daemon || true\nsystemctl enable fstrim.timer || true\nsystemctl enable fwupd-refresh.timer || true\n",

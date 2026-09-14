@@ -171,7 +171,7 @@ def require_tool(name):
 
 def available_grub_modules(grub_dir: Path, requested):
     """Return requested GRUB modules that are actually shipped by Debian."""
-    available = {p.stem for p in grub_dir.glob(".mod")}
+    available = {p.stem for p in grub_dir.glob("*.mod")}
     missing = [name for name in requested if name not in available]
     tolerated = {"initrd"}
     unexpected = [name for name in missing if name not in tolerated]
