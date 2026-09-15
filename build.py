@@ -886,23 +886,10 @@ menuentry "{distro} {version} (live, debug)" {{
                 finally:
                     Path(early_cfg_path).unlink(missing_ok=True)
 
-                # Concatenate cdboot.img + core.img → bios.img
-                # Ensure the boot signature (0x55AA) is at offset 0x1FE (510)
-                with open(bios_core, "wb") as out_f:
-                    cdboot_data = cdboot.read_bytes()
-                    # Pad cdboot.img to exactly 512 bytes if needed
-                    if len(cdboot_data) < 512:
-                        cdboot_data = cdboot_data.ljust(512, b'\x00')
-                    out_f.write(cdboot_data[:512])
-                    out_f.write(bios_core_raw.read_bytes())
-
-                # Verify and fix boot signature at offset 0x1FE
-                with open(bios_core, "r+b") as f:
-                    f.seek(510)
-                    sig = f.read(2)
-                    if sig != b'\x55\xaa':
-                        f.seek(510)
-                        f.write(b'\x55\xaa')
+                # GRUB's El Torito loader occupies a full 2048-byte CD sector.
+                # Preserve it verbatim, followed by core.img. A disk-style
+                # signature at byte 510 would overwrite executable loader code.
+                bios_core.write_bytes(cdboot.read_bytes() + bios_core_raw.read_bytes())
 
                 bios_core_raw.unlink(missing_ok=True)
 

@@ -38,6 +38,31 @@ sudo python3 build.py PersisOS-2.0-amd64.json --workdir build --outdir output
 
 Use the arm64 configuration for ARM images. Generated files are written to `output/`; temporary build state is kept in `build/` and ignored by Git.
 
+### Test in QEMU
+
+For an amd64 desktop ISO, run from the project directory:
+
+```bash
+qemu-system-x86_64 -m 4096 -smp 2 -boot d \
+  -cdrom output/PersisOS-2.0-amd64.iso
+```
+
+The GRUB menu should appear, then start the live session automatically. Select
+the `live, debug` entry to show boot messages or `live, nomodeset` when
+troubleshooting a blank graphical display. Use QEMU's graphical window for this
+command; the default boot entries do not configure a serial console.
+
+If an older amd64 image stalls at `Booting from DVD/CD...` before GRUB appears,
+rebuild it with the corrected builder. Earlier builds truncated GRUB's CD loader
+to 512 bytes, producing an ISO that built successfully but could not boot via
+BIOS. ARM64 images require an ARM64 virtual machine and matching UEFI firmware.
+
+Run the boot-image assembly regression test with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
 The amd64 server image uses its own manifest and CI workflow:
 
 ```bash
