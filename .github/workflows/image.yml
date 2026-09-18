@@ -1,0 +1,55 @@
+name: Build image
+on:
+  workflow_call:
+    inputs:
+      config:
+        required: true
+        type: string
+      runner:
+        required: true
+        type: string
+      artifact:
+        required: true
+        type: string
+      release:
+        default: false
+        type: boolean
+jobs:
+  image:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test
+        env:
+          IMAGE_CONFIG: ${{ inputs.config }}
+        run: |
+          set -euo pipefail
+          docker run --rm --privileged \
+            -v "$GITHUB_WORKSPACE:/work" -w /work \
+            debian:trixie bash scripts/ci-build.sh "$IMAGE_CONFIG" \
+            2>&1 | tee build.log
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}-log
+          path: build.log
+      - name: Upload image and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.artifact }}
+          path: |
+            output/*.iso
+            output/*.sha256
+          if-no-files-found: error
+          compression-level: 0
+      - name: Publish release assets
+        if: inputs.release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.release.tag_name }}
+          fail_on_unmatched_files: true
+          files: |
+            output/*.iso
+            output/*.sha256

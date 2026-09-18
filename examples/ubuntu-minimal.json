@@ -1,0 +1,18 @@
+{
+  "distro_name": "Ubuntu Live",
+  "version": "24.04",
+  "architecture": "amd64",
+  "suite": "noble",
+  "apt_mirror": "http://archive.ubuntu.com/ubuntu",
+  "apt_components": ["main", "universe"],
+  "apt_sources": [
+    "deb http://archive.ubuntu.com/ubuntu noble main universe",
+    "deb http://archive.ubuntu.com/ubuntu noble-updates main universe",
+    "deb http://security.ubuntu.com/ubuntu noble-security main universe"
+  ],
+  "kernel_package": "linux-generic",
+  "packages": ["ca-certificates", "network-manager"],
+  "services": {"enable": ["NetworkManager"]},
+  "live_username": "user",
+  "live_user_password": null
+}

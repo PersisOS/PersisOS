@@ -1,96 +1,27 @@
 name: Release Build
-
 on:
   release:
     types: [published]
-
 permissions:
   contents: write
-
 jobs:
   build:
     strategy:
       fail-fast: false
       matrix:
         include:
-          - arch: amd64
-            platform: linux/amd64
+          - config: PersisOS-2.0-amd64.json
             runner: ubuntu-latest
-          - arch: arm64
-            platform: linux/arm64
+            artifact: persisos-amd64
+          - config: PersisOS-2.0-arm64.json
             runner: ubuntu-24.04-arm
-
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        if: matrix.arch == 'arm64'
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build ISO (${{ matrix.arch }})
-        run: |
-          docker run --rm --privileged \
-            --platform ${{ matrix.platform }} \
-            -v ${{ github.workspace }}:/workspace \
-            -w /workspace \
-            debian:trixie \
-            bash -c "
-              export DEBIAN_FRONTEND=noninteractive && \
-              apt-get update -qq && \
-              apt-get install -y --no-install-recommends \
-                debootstrap squashfs-tools grub2-common \
-                ${{ matrix.arch == 'amd64' && 'grub-pc-bin grub-efi-amd64-bin' || 'grub-efi-arm64-bin' }} \
-                xorriso mtools dosfstools python3 && \
-              python3 build.py PersisOS-2.0-${{ matrix.arch }}.json \
-                --workdir build --outdir output
-            "
-
-      - name: Upload ISO to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          files: |
-            output/*.iso
-
-  build-server:
-    runs-on: ubuntu-latest
-    timeout-minutes: 90
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build server ISO (amd64)
-        run: |
-          docker run --rm --privileged \
-            --platform linux/amd64 \
-            -v ${{ github.workspace }}:/work \
-            -w /work \
-            debian:trixie \
-            bash -c "
-              set -euo pipefail &&
-              export DEBIAN_FRONTEND=noninteractive &&
-              apt-get update -qq &&
-              apt-get install -y --no-install-recommends \
-                debootstrap squashfs-tools grub2-common \
-                grub-pc-bin grub-efi-amd64-bin \
-                xorriso mtools dosfstools python3 &&
-              python3 build.py PersisOS-Server-2.0-amd64.json \
-                --workdir build-server --outdir output-server
-            "
-
-      - name: Upload server ISO to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name }}
-          files: |
-            output-server/*.iso
+            artifact: persisos-arm64
+          - config: PersisOS-Server-2.0-amd64.json
+            runner: ubuntu-latest
+            artifact: persisos-server-amd64
+    uses: ./.github/workflows/image.yml
+    with:
+      config: ${{ matrix.config }}
+      runner: ${{ matrix.runner }}
+      artifact: ${{ matrix.artifact }}
+      release: true

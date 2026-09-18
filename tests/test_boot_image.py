@@ -25,6 +25,8 @@ class BiosImageTest(unittest.TestCase):
             builder.prepare_dirs()
 
             def fake_run(cmd, **kwargs):
+                if cmd[0] == 'xorriso':
+                    Path(cmd[cmd.index('-output') + 1]).write_bytes(b'ISO')
                 if cmd[0] == 'grub-mkimage':
                     Path(cmd[cmd.index('--output') + 1]).write_bytes(core)
 

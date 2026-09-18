@@ -1,0 +1,10 @@
+{
+  "distro_name": "Debian Live",
+  "version": "13",
+  "architecture": "amd64",
+  "suite": "trixie",
+  "apt_mirror": "https://deb.debian.org/debian",
+  "packages": [],
+  "live_username": "user",
+  "live_user_password": null
+}

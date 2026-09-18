@@ -30,7 +30,11 @@ belong in the repositories rather than the base image.
 
 ## Build
 
-The builder must run as root (or inside the provided CI container) and requires debootstrap, xorriso, squashfs-tools, GRUB, and dosfstools.
+The builder supports configurable Debian-family live images. See [the builder guide](docs/builder.md) for dependencies, configuration, examples, and supported boot targets. Full builds require root; configuration validation does not.
+
+```bash
+python3 build.py PersisOS-2.0-amd64.json --validate
+```
 
 ```bash
 sudo python3 build.py PersisOS-2.0-amd64.json --workdir build --outdir output
@@ -76,8 +80,10 @@ password and enables the service.
 
 ## Project layout
 
-- `build.py` — reproducible live ISO builder
+- `build.py` — configurable Debian-family live ISO builder
 - `PersisOS-2.0-*.json` — desktop image definitions
 - `PersisOS-Server-2.0-amd64.json` — headless amd64 server image definition
+- `hooks/` — readable PersisOS customization scripts
+- `examples/` — minimal Debian and Ubuntu manifests
 - `assets/` — Plasma, SDDM, icon, and wallpaper branding
 - `.github/workflows/` — pull request, branch, and release builds
