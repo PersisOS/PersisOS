@@ -125,7 +125,9 @@ Use an empty dedicated work directory, separate from the output directory. A
 nonempty work directory or overlapping paths are rejected. Failed builds retain
 the workspace for inspection; there is no automatic resume. Unmount any remaining
 mounts before manually removing a failed workspace, and use a fresh work directory
-for the next attempt. Unmount failures stop image creation and cleanup.
+for the next attempt. Unmount failures stop image creation and cleanup; a mount
+that reports busy is retried with backoff and finally detached lazily before the
+build gives up.
 
 Successful builds remove working files unless `--keep-workdir` is set, including
 when the builder chose a temporary work directory. The final output is an ISO

@@ -60,6 +60,30 @@ class ConfigTests(unittest.TestCase):
             builder._unmount_pseudo_filesystems()
         self.assertEqual(builder._mounts, [mount])
 
+    def test_transient_busy_mount_is_retried(self):
+        builder = LiveBuilder(self.load(), self.root / 'work', self.root / 'out')
+        mount = builder.chroot / 'sys'
+        builder._mounts = [mount]
+        with patch('build.run', side_effect=[BuildError('busy'), None]), patch('build.time.sleep'):
+            builder._unmount_pseudo_filesystems()
+        self.assertEqual(builder._mounts, [])
+
+    def test_permanently_busy_mount_falls_back_to_lazy_unmount(self):
+        builder = LiveBuilder(self.load(), self.root / 'work', self.root / 'out')
+        mount = builder.chroot / 'sys'
+        builder._mounts = [mount]
+        commands = []
+
+        def record(command, **kwargs):
+            commands.append(command)
+            if '-l' not in command:
+                raise BuildError('busy')
+
+        with patch('build.run', side_effect=record), patch('build.time.sleep'):
+            builder._unmount_pseudo_filesystems()
+        self.assertEqual(builder._mounts, [])
+        self.assertEqual(commands[-1], ['umount', '-l', str(mount)])
+
     def test_partial_mount_failure_unwinds_only_mounted_paths(self):
         builder = LiveBuilder(self.load(), self.root / 'work', self.root / 'out')
         with patch('build.run', side_effect=[None, BuildError('mount failed')]):

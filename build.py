@@ -19,6 +19,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 
@@ -445,12 +446,31 @@ class LiveBuilder:
                 run(["mount", *args, str(target)])
                 self._mounts.append(target)
 
+    @staticmethod
+    def _unmount_target(target):
+        """Unmount a target, tolerating transient busy states.
+
+        Processes spawned inside the chroot (for example initramfs hooks)
+        can still hold the mount open for a moment after their parent exits.
+        Retry with backoff, then detach lazily so cleanup never wedges the
+        build on a mount that is on its way out anyway.
+        """
+        delay = 0.2
+        for _ in range(4):
+            try:
+                run(["umount", str(target)])
+                return
+            except BuildError:
+                time.sleep(delay)
+                delay *= 2
+        run(["umount", "-l", str(target)])
+
     def _unmount_pseudo_filesystems(self):
         """Never delete a tree while it still contains a host mount."""
         failed = []
         for target in reversed(self._mounts[:]):
             try:
-                run(["umount", str(target)])
+                self._unmount_target(target)
                 self._mounts.remove(target)
             except BuildError:
                 failed.append(str(target))
