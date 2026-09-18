@@ -1,102 +1,170 @@
 import QtQuick 2.15
-import org.kde.plasma.core 2.0 as PlasmaCore
 
+// PersisOS splash — "violet night".
+// A single quiet composition: the logo rises out of a soft glow while a thin
+// accent line underneath fills in step with the real session startup stages.
 Rectangle {
     id: root
-    color: "#1b1d1f"
+    color: "#141317"
 
-    // ksplashqml sets this property as it progresses through
-    // the well-known startup stages.
+    // ksplashqml increments this as it passes each well-known startup stage.
     property int stage
+    readonly property int totalStages: 6
+
+    readonly property color brand: "#9738ba"
+    readonly property color glow: "#b25ae8"
+    readonly property color ink: "#f4eff8"
 
     onStageChanged: {
         if (stage === 1) {
-            logoAnim.running = true
+            intro.start()
         }
     }
 
-    Image {
-        id: logo
-        source: "/usr/share/icons/hicolor/scalable/apps/persisos.svg"
-        sourceSize.width: 180
-        sourceSize.height: 180
-        width: 180
-        height: 180
-        anchors.centerIn: parent
-        opacity: 0
-        scale: 0.92
-        smooth: true
+    // Soft radial glow behind the logo, built from translucent circles so no
+    // graphical-effects import is needed.
+    Item {
+        anchors.centerIn: logo
+        width: 460
+        height: 460
 
-        SequentialAnimation {
-            id: logoAnim
-            running: false
-            NumberAnimation {
-                targets: [logo]
-                properties: "opacity"
-                from: 0
-                to: 1
-                duration: 600
-                easing.type: Easing.InOutQuad
-            }
+        Rectangle {
+            anchors.centerIn: parent
+            width: 440
+            height: 440
+            radius: 220
+            color: root.brand
+            opacity: 0.08
         }
-        NumberAnimation on scale {
-            from: 0.92
-            to: 1
-            duration: 600
-            easing.type: Easing.OutCubic
-            running: true
+        Rectangle {
+            anchors.centerIn: parent
+            width: 300
+            height: 300
+            radius: 150
+            color: root.glow
+            opacity: 0.07
+        }
+
+        // The glow breathes very slowly; barely visible, but keeps the
+        // screen from feeling like a frozen frame.
+        SequentialAnimation on opacity {
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.75; duration: 3200; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 1.0; duration: 3200; easing.type: Easing.InOutSine }
         }
     }
 
-    Text {
-        anchors.top: logo.bottom
-        anchors.topMargin: 24
-        anchors.horizontalCenter: logo.horizontalCenter
-        text: "PersisOS"
-        color: "#ffffff"
-        font.pointSize: 24
-        font.letterSpacing: 3
-        font.bold: true
-        opacity: 1.0
-    }
-
-    Text {
-        anchors.top: parent.verticalCenter
-        anchors.topMargin: 120
-        anchors.horizontalCenter: logo.horizontalCenter
-        text: "Welcome"
-        color: "#3daee9"
-        font.pointSize: 14
-        font.letterSpacing: 2
-        opacity: 0.85
-    }
-
-    // Simple busy indicator: three dots that pulse in sequence
-    Row {
-        id: dots
-        anchors.top: parent.verticalCenter
-        anchors.topMargin: 150
+    Item {
+        id: logoSlot
         anchors.horizontalCenter: parent.horizontalCenter
-        spacing: 10
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -26
+        width: 168
+        height: 168
 
-        Repeater {
-            model: 3
-            Rectangle {
-                width: 8
-                height: 8
-                radius: 4
-                color: "#b25ae8"
-                opacity: 0.3
+        Image {
+            id: logo
+            source: "/usr/share/icons/hicolor/scalable/apps/persisos.svg"
+            sourceSize.width: 168
+            sourceSize.height: 168
+            width: 168
+            height: 168
+            y: 18
+            opacity: 0
+            smooth: true
 
-                SequentialAnimation on opacity {
-                    loops: Animation.Infinite
-                    running: true
-                    PauseAnimation { duration: index * 250 }
-                    NumberAnimation { to: 1; duration: 500; easing.type: Easing.InOutQuad }
-                    NumberAnimation { to: 0.3; duration: 500; easing.type: Easing.InOutQuad }
-                    PauseAnimation { duration: (2 - index) * 250 }
+            ParallelAnimation {
+                id: intro
+                NumberAnimation {
+                    target: logo
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 700
+                    easing.type: Easing.OutQuad
+                }
+                NumberAnimation {
+                    target: logo
+                    property: "y"
+                    from: 18
+                    to: 0
+                    duration: 700
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: wordmark
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 900
+                    easing.type: Easing.OutQuad
                 }
             }
         }
+    }
+
+    Text {
+        id: wordmark
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: logo.bottom
+        anchors.topMargin: 28
+        text: "PersisOS"
+        color: root.ink
+        font.pointSize: 22
+        font.letterSpacing: 6
+        opacity: 0
+    }
+
+    // Thin progress line, tied to actual startup stages.
+    Item {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: wordmark.bottom
+        anchors.topMargin: 22
+        width: 220
+        height: 2
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 1
+            color: "#ffffff"
+            opacity: 0.12
+        }
+        Rectangle {
+            anchors.left: parent.left
+            anchors.top: parent.top
+            height: parent.height
+            radius: 1
+            width: parent.width * Math.min(1, root.stage / root.totalStages)
+            color: root.glow
+            Behavior on width {
+                NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
+            }
+        }
+    }
+
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.verticalCenter
+        anchors.topMargin: 130
+        text: "Starting session"
+        color: root.ink
+        opacity: 0.45
+        font.pointSize: 11
+        font.letterSpacing: 2
+
+        SequentialAnimation on opacity {
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.18; duration: 1400; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 0.45; duration: 1400; easing.type: Easing.InOutSine }
+        }
+    }
+
+    // Fade the whole splash out once the session signals its last stage.
+    NumberAnimation {
+        target: root
+        property: "opacity"
+        to: 0
+        duration: 250
+        running: root.stage >= root.totalStages
     }
 }

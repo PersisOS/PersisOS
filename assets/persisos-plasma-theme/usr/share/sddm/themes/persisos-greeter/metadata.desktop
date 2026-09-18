@@ -1,0 +1,9 @@
+[SDDM Theme]
+Name=PersisOS
+Description=PersisOS violet-night login
+Author=PersisOS
+License=GPL-2.0+
+Type=sddm-theme
+Version=1.0
+MainScript=Main.qml
+ConfigFile=theme.conf
