@@ -46,6 +46,9 @@
     "htop",
     "ncdu",
     "jq",
+    "irqbalance",
+    "manpages",
+    "python3",
     "git",
     "rsync",
     "tree",
@@ -80,6 +83,9 @@
     "attr",
     "podman",
     "podman-compose",
+    "uidmap",
+    "slirp4netns",
+    "mtr-tiny",
     "qemu-guest-agent"
   ],
   "exclude_packages": [],
@@ -109,7 +115,12 @@
     "deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware",
     "deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
   ],
-  "installer_enabled": false,
+  "installer_enabled": true,
+  "installer_preseed_options": {
+    "partition_method": "lvm",
+    "tasks": "standard, ssh-server",
+    "include_packages": "firmware-linux network-manager sudo openssh-server chrony unattended-upgrades needrestart fail2ban auditd libpam-pwquality podman podman-compose lvm2 mdadm git rsync curl wget gnupg vim nano tmux htop jq manpages python3 irqbalance bash-completion logrotate smartmontools btrfs-progs xfsprogs dosfstools"
+  },
   "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "install_recommends": false,
   "os_release": {
@@ -120,7 +131,11 @@
     "VERSION": "2.0",
     "VERSION_ID": "2.0",
     "VARIANT": "Server",
-    "VARIANT_ID": "server"
+    "VARIANT_ID": "server",
+    "LOGO": "persisos",
+    "HOME_URL": "https://github.com/arshavirm/PersisOS",
+    "SUPPORT_URL": "https://github.com/arshavirm/PersisOS/issues",
+    "BUG_REPORT_URL": "https://github.com/arshavirm/PersisOS/issues"
   },
   "services": {
     "enable": [
@@ -132,6 +147,7 @@
       "fail2ban",
       "unattended-upgrades",
       "fstrim.timer",
+      "smartmontools",
       "qemu-guest-agent"
     ],
     "disable": [

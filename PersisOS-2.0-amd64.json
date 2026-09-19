@@ -65,7 +65,13 @@
     "ark",
     "okular",
     "kde-spectacle",
+    "p7zip-full",
+    "kdegraphics-thumbnailers",
+    "ffmpegthumbs",
+    "partitionmanager",
     "firefox-esr",
+    "cups",
+    "print-manager",
     "xdg-user-dirs",
     "xdg-utils",
     "xdg-desktop-portal-kde",
@@ -73,11 +79,18 @@
     "fonts-noto-core",
     "fonts-noto-color-emoji",
     "network-manager",
+    "network-manager-openvpn",
     "power-profiles-daemon",
     "upower",
     "udisks2",
     "plasma-runners-addons",
     "fastfetch",
+    "bash-completion",
+    "man-db",
+    "manpages",
+    "htop",
+    "usbutils",
+    "systemd-timesyncd",
     "squashfs-tools",
     "live-boot-initramfs-tools",
     "firmware-iwlwifi",
@@ -128,6 +141,7 @@
     "hooks/desktop/plasma-assets.sh",
     "hooks/desktop/theme-command.sh",
     "hooks/desktop/desktop-defaults.sh",
+    "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
     "hooks/desktop/login-branding.sh",
     "hooks/desktop/cleanup-assets.sh"
@@ -147,7 +161,7 @@
   "installer_preseed_options": {
     "partition_method": "lvm",
     "tasks": "standard, kde-desktop",
-    "include_packages": "firmware-linux network-manager sudo plasma-desktop sddm"
+    "include_packages": "firmware-linux network-manager sudo plasma-desktop sddm cups print-manager systemd-timesyncd firefox-esr vlc okular ark gwenview kate konsole kcalc kde-spectacle fastfetch network-manager-openvpn fonts-noto-core fonts-noto-color-emoji bash-completion man-db htop unattended-upgrades"
   },
   "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "install_recommends": false,
@@ -175,7 +189,9 @@
       "fwupd-refresh.timer",
       "apparmor",
       "unattended-upgrades",
-      "nftables"
+      "nftables",
+      "systemd-timesyncd",
+      "cups"
     ]
   }
 }
