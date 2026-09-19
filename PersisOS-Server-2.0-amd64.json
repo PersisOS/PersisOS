@@ -110,6 +110,7 @@
     "deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
   ],
   "installer_enabled": false,
+  "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "install_recommends": false,
   "os_release": {
     "NAME": "PersisOS Server",

@@ -20,6 +20,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 from pathlib import Path
 
 
@@ -211,6 +212,7 @@ DEFAULTS = {
     "apt_components": ["main"], "pre_chroot_scripts": [],
     "post_install_scripts": [], "architecture": "amd64",
     "installer_enabled": False, "installer_preseed_options": {},
+    "installer_netboot": True,
     "exclude_packages": [], "install_recommends": False,
     "live_packages": LIVE_PACKAGES, "boot_append": "quiet",
     "services": {"enable": [], "disable": [], "mask": []},
@@ -252,7 +254,7 @@ def load_config(path: str) -> dict:
             cfg[new] = cfg.pop(old)
     allowed = set(DEFAULTS) | set(REQUIRED_KEYS) | {
         "hostname", "iso_filename", "iso_volume_id", "kernel_package",
-        "apt_sources", "debootstrap_variant",
+        "apt_sources", "debootstrap_variant", "grub_background",
         "debootstrap_script", "debootstrap_keyring", "os_release",
     }
     unknown = set(cfg) - allowed
@@ -325,6 +327,14 @@ def load_config(path: str) -> dict:
             inline = "\n" in script or script.startswith("#!")
             if not inline and not (config_path.parent / script).is_file():
                 raise BuildError(f"Script does not exist: {script}")
+    if "grub_background" in cfg:
+        bg = cfg["grub_background"]
+        if not isinstance(bg, str) or not matches(r"[A-Za-z0-9][A-Za-z0-9_.\-/]*", bg) or ".." in Path(bg).parts:
+            raise BuildError("grub_background must be a relative path to an image")
+        bg_path = config_path.parent / bg
+        if not bg_path.is_file() or bg_path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tga"):
+            raise BuildError(f"grub_background image does not exist or is unsupported: {bg}")
+        cfg["grub_background"] = str(bg_path.resolve())
     for key in ("debootstrap_keyring", "debootstrap_script"):
         if key in cfg:
             if not isinstance(cfg[key], str) or not (config_path.parent / cfg[key]).is_file():
@@ -601,8 +611,45 @@ class LiveBuilder:
             iso_preseed.mkdir(parents=True, exist_ok=True)
             shutil.copy2(preseed_dir / preseed_filename, iso_preseed / preseed_filename)
 
+            # Fetch Debian Installer netboot images onto the ISO so the
+            # bootloader can offer a real "Install <distro>" boot option.
+            if self.cfg.get("installer_netboot", True):
+                with build_step("Fetching Debian Installer netboot images"):
+                    self._fetch_netboot_installer()
+
             # Create installer launcher desktop file
             self._create_installer_desktop()
+
+    def _fetch_netboot_installer(self):
+        """Download d-i netboot kernel/initrd into iso_root/install/."""
+        arch = self.cfg["architecture"]
+        suite = self.cfg["suite"]
+        base = (
+            f"{self.cfg['apt_mirror'].rstrip('/')}"
+            f"/dists/{suite}/main/installer-{arch}/current/images/netboot/debian-installer/{arch}"
+        )
+        targets = [
+            ("linux", "install/vmlinuz"),
+            ("initrd.gz", "install/initrd.gz"),
+            ("gtk/linux", "install/gtk/vmlinuz"),
+            ("gtk/initrd.gz", "install/gtk/initrd.gz"),
+        ]
+        fetched = 0
+        for src, dst in targets:
+            out = self.iso_root / dst
+            out.parent.mkdir(parents=True, exist_ok=True)
+            url = f"{base}/{src}"
+            try:
+                request = urllib.request.Request(url, headers={"User-Agent": "builder"})
+                with urllib.request.urlopen(request, timeout=120) as resp, open(out, "wb") as fh:
+                    shutil.copyfileobj(resp, fh)
+                fetched += 1
+                print(f"  Downloaded {dst}")
+            except Exception as exc:
+                print(f"  Warning: could not fetch {url}: {exc}")
+                out.unlink(missing_ok=True)
+        if fetched == 0:
+            print("  Warning: no installer images fetched; boot menu will only offer the live session")
 
     def _generate_preseed_file(self, preseed_path: Path):
         """Generate a preseed configuration file for automated installation."""
@@ -671,14 +718,19 @@ d-i finish-install/reboot_in_progress note
     def _create_installer_desktop(self):
         """Create a desktop file to launch the Debian Installer."""
         distro_name = self.cfg["distro_name"]
+        icon_name = self.cfg['hostname']
         desktop_content = f'''[Desktop Entry]
 Type=Application
 Name=Install {distro_name}
-Comment=Launch the Debian Installer to install {distro_name} to your hard drive
-Exec=/usr/lib/debian-installer-launcher/launcher
-Icon=system-install
+GenericName=System Installer
+Comment=Install {distro_name} on this computer
+TryExec=debian-installer-launcher
+Exec=debian-installer-launcher
+Icon={icon_name}
 Terminal=false
-Categories=System;
+StartupNotify=true
+Categories=Qt;System;
+Keywords=install;installer;system;{distro_name.lower()};
 '''
         # Create in chroot for installed system
         apps_dir = self.chroot / "usr" / "share" / "applications"
@@ -935,6 +987,47 @@ menuentry "{distro} {version} (live, debug)" {{
     initrd /live/initrd
 }}
 '''
+
+            # Branded installer boot entries, using the d-i netboot images
+            # shipped on the ISO (when they were fetched successfully).
+            install_dir = self.iso_root / "install"
+            preseed_path = f"/preseed/{self.cfg['hostname']}.preseed"
+            preseed_arg = f"file={preseed_path}" if (self.iso_root / "preseed").is_dir() else ""
+            if preseed_arg:
+                preseed_arg = f"{preseed_arg} auto=true priority=high"
+            installer_entries = ""
+            if (install_dir / "gtk" / "vmlinuz").is_file() and (install_dir / "gtk" / "initrd.gz").is_file():
+                installer_entries += f'''\
+menuentry "Install {distro} {version}" {{
+    linux  /install/gtk/vmlinuz {preseed_arg} quiet
+    initrd /install/gtk/initrd.gz
+}}
+
+'''
+            if (install_dir / "vmlinuz").is_file() and (install_dir / "initrd.gz").is_file():
+                installer_entries += f'''\
+menuentry "Install {distro} {version} (text mode)" {{
+    linux  /install/vmlinuz {preseed_arg}
+    initrd /install/initrd.gz
+}}
+
+'''
+            grub_cfg += installer_entries
+
+            # Brand the boot menu with the distribution background image.
+            background = self.cfg.get("grub_background")
+            if background:
+                try:
+                    shutil.copy2(background, self.iso_root / "boot" / "grub" / "background.png")
+                    grub_cfg += (
+                        "if background_image /boot/grub/background.png ; then\n"
+                        "    set color_normal=white/black\n"
+                        "    set color_highlight=black/light-gray\n"
+                        "fi\n"
+                    )
+                except OSError as exc:
+                    print(f"  Warning: could not install GRUB background: {exc}")
+
             (self.iso_root / "boot" / "grub" / "grub.cfg").write_text(grub_cfg)
             (self.iso_root / ".disk" / "info").write_text(
                 f"{distro} {version} - Live\n"

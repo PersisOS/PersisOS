@@ -140,6 +140,12 @@
     "deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
   ],
   "installer_enabled": true,
+  "installer_preseed_options": {
+    "partition_method": "lvm",
+    "tasks": "standard, kde-desktop",
+    "include_packages": "firmware-linux network-manager sudo plasma-desktop sddm"
+  },
+  "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "install_recommends": false,
   "services": {
     "enable": [
