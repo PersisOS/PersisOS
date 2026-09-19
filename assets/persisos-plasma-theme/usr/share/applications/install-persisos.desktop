@@ -4,10 +4,9 @@ Name=Install PersisOS
 GenericName=System Installer
 Comment=Install PersisOS on this computer
 Icon=persisos
-TryExec=debian-installer-launcher
-Exec=debian-installer-launcher
+TryExec=calamares
+Exec=pkexec calamares
 Terminal=false
 StartupNotify=true
 Categories=Qt;System;
 Keywords=install;installer;system;
-

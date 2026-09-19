@@ -115,12 +115,6 @@
     "deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware",
     "deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
   ],
-  "installer_enabled": true,
-  "installer_preseed_options": {
-    "partition_method": "lvm",
-    "tasks": "standard, ssh-server",
-    "include_packages": "firmware-linux network-manager sudo openssh-server chrony unattended-upgrades needrestart fail2ban auditd libpam-pwquality podman podman-compose lvm2 mdadm git rsync curl wget gnupg vim nano tmux htop jq manpages python3 irqbalance bash-completion logrotate smartmontools btrfs-progs xfsprogs dosfstools"
-  },
   "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "install_recommends": false,
   "os_release": {

@@ -26,7 +26,7 @@ class ConfigTests(unittest.TestCase):
         cfg = self.load()
         self.assertEqual(cfg['apt_sources'], ['deb https://archive.example/distro custom main universe'])
         self.assertEqual(cfg['kernel_package'], 'linux-generic')
-        self.assertFalse(cfg['installer_enabled'])
+        self.assertFalse('installer_enabled' in cfg)
 
     def test_rejects_malformed_config(self):
         for overrides in ({'packages': 'curl'}, {'installer_enabled': 'false'},
@@ -111,9 +111,9 @@ class ConfigTests(unittest.TestCase):
 
     def test_invalid_types_produce_build_errors(self):
         for key in ('architecture', 'kernel_package', 'hostname', 'iso_volume_id',
-                    'iso_filename', 'services', 'installer_preseed_options', 'os_release'):
+                    'iso_filename', 'services', 'os_release'):
             for value in ([], {}, 123, None):
-                if key in ('services', 'installer_preseed_options', 'os_release') and value == {}:
+                if key in ('services', 'os_release') and value == {}:
                     continue
                 with self.subTest(key=key, value=value), self.assertRaises(BuildError):
                     self.load(**{key: value})

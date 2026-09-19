@@ -86,25 +86,12 @@ Optional values:
 | `squashfs_compression` | `xz`; also zstd, gzip, lzo, lz4 when supported by host tools and target kernel |
 | `iso_volume_id` | Derived label, at most 32 letters/digits/underscores |
 | `iso_filename` | Derived safe `.iso` filename |
-| `installer_enabled` | `false`; opt into Debian-specific installer launcher and preseed generation |
-| `installer_preseed_options` | `partition_method`, `tasks`, `include_packages` string overrides |
-| `installer_netboot` | `true`; downloads the d-i netboot kernel/initrd (text and graphical) onto the ISO and adds branded `Install <distro>` GRUB entries that pass the preseed file |
 | `grub_background` | Path to a PNG/JPG/TGA image, relative to the manifest; installed as the GRUB boot menu background |
 
 Legacy `arch` and `debian_distro` aliases remain supported; conflicting aliases
 are rejected. Replace legacy `security_mirror` with explicit `apt_sources`.
 Unknown keys are errors, so misspelled settings cannot silently disappear.
 The old unused `splash` key should be replaced by `boot_append`.
-
-When `installer_enabled` is set, the builder exports the preseed to
-`/preseed/<hostname>.preseed` on the ISO and, with `installer_netboot`, ships the
-Debian Installer netboot images. The GRUB menu then offers `Install <distro>`
-(graphical) and a text-mode entry that boot the installer with the preseed and
-`auto=true priority=high`. Partitioning questions may still appear; review the
-preseed before relying on unattended behavior. If the netboot download fails,
-the build continues with only the live session and the desktop installer
-launcher. Installing the launcher alone does not provide a complete installer
-for every derivative.
 
 Null passwords lock password authentication; they do not disable live session
 autologin or sudo configuration. Set `noautologin` in `boot_append` when needed.

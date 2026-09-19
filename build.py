@@ -3,8 +3,8 @@
 Generic live ISO builder for Debian-based distributions.
 
 This script builds a bootable live ISO image from a JSON configuration file.
-It supports GRUB BIOS/UEFI boot and optional Debian Installer launcher and
-preseed generation. Distribution-specific customization belongs in manifests.
+Distribution-specific customization, such as installer integration, belongs
+in manifests and hooks.
 """
 
 import argparse
@@ -20,7 +20,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib.request
 from pathlib import Path
 
 
@@ -211,8 +210,6 @@ DEFAULTS = {
     "live_user_password": None, "root_password": None,
     "apt_components": ["main"], "pre_chroot_scripts": [],
     "post_install_scripts": [], "architecture": "amd64",
-    "installer_enabled": False, "installer_preseed_options": {},
-    "installer_netboot": True,
     "exclude_packages": [], "install_recommends": False,
     "live_packages": LIVE_PACKAGES, "boot_append": "quiet",
     "services": {"enable": [], "disable": [], "mask": []},
@@ -281,7 +278,7 @@ def load_config(path: str) -> dict:
             raise BuildError(f"{key} must be a list of valid names")
     if not cfg["apt_components"] or not matches(r"[a-z0-9][a-z0-9+.-]*", cfg["kernel_package"]):
         raise BuildError("apt_components and kernel_package must be valid and nonempty")
-    for key in ("installer_enabled", "install_recommends"):
+    for key in ("install_recommends",):
         if not isinstance(cfg[key], bool):
             raise BuildError(f"{key} must be boolean")
     for key in ("root_password", "live_user_password"):
@@ -346,17 +343,12 @@ def load_config(path: str) -> dict:
     for action, units in services.items():
         if not name_list(units, r"[A-Za-z0-9_][A-Za-z0-9@_.-]*"):
             raise BuildError(f"services.{action} must contain unit names")
-    if not isinstance(cfg["installer_preseed_options"], dict):
-        raise BuildError("installer_preseed_options must be an object")
     if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", cfg["suite"]):
         raise BuildError("suite must be a release name")
     if not re.fullmatch(r"(?:https?|file)://[^\s]+", cfg["apt_mirror"]):
         raise BuildError("apt_mirror must be an HTTP(S) or file URL")
     if "debootstrap_variant" in cfg and cfg["debootstrap_variant"] not in ("minbase", "buildd", "fakechroot"):
         raise BuildError("Unsupported debootstrap_variant")
-    for key, value in cfg["installer_preseed_options"].items():
-        if key not in ("partition_method", "tasks", "include_packages") or not single_line(value):
-            raise BuildError("Invalid installer_preseed_options")
     identity = cfg["os_release"]
     if not isinstance(identity, dict) or not all(
         matches(r"[A-Z][A-Z0-9_]*", k) and single_line(v, empty=True)
@@ -579,173 +571,6 @@ class LiveBuilder:
                 ["apt-get", "--no-remove", "install", "-y"] + pkgs,
                 extra_env=env,
             )
-
-    # -------------------------------------------------------------------------
-    # Debian Installer Integration
-    # -------------------------------------------------------------------------
-
-    def setup_debian_installer(self):
-        """Set up Debian Installer with preseed configuration."""
-        if not self.cfg.get("installer_enabled", False):
-            return
-
-        with build_step("Setting up Debian Installer"):
-            di_packages = ["debian-installer-launcher"]
-            env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
-            self._chroot(
-                ["apt-get", "install", "-y"] + di_packages,
-                extra_env=env,
-            )
-
-            # Create preseed directory structure
-            preseed_dir = self.chroot / "preseed"
-            preseed_dir.mkdir(parents=True, exist_ok=True)
-
-            # Generate preseed file with distro-specific name
-            distro_lower = self.cfg["hostname"]
-            preseed_filename = f"{distro_lower}.preseed"
-            self._generate_preseed_file(preseed_dir / preseed_filename)
-
-            # Copy preseed to ISO root for early access
-            iso_preseed = self.iso_root / "preseed"
-            iso_preseed.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(preseed_dir / preseed_filename, iso_preseed / preseed_filename)
-
-            # Fetch Debian Installer netboot images onto the ISO so the
-            # bootloader can offer a real "Install <distro>" boot option.
-            if self.cfg.get("installer_netboot", True):
-                with build_step("Fetching Debian Installer netboot images"):
-                    self._fetch_netboot_installer()
-
-            # Create installer launcher desktop file
-            self._create_installer_desktop()
-
-    def _fetch_netboot_installer(self):
-        """Download d-i netboot kernel/initrd into iso_root/install/."""
-        arch = self.cfg["architecture"]
-        suite = self.cfg["suite"]
-        base = (
-            f"{self.cfg['apt_mirror'].rstrip('/')}"
-            f"/dists/{suite}/main/installer-{arch}/current/images/netboot/debian-installer/{arch}"
-        )
-        targets = [
-            ("linux", "install/vmlinuz"),
-            ("initrd.gz", "install/initrd.gz"),
-            ("gtk/linux", "install/gtk/vmlinuz"),
-            ("gtk/initrd.gz", "install/gtk/initrd.gz"),
-        ]
-        fetched = 0
-        for src, dst in targets:
-            out = self.iso_root / dst
-            out.parent.mkdir(parents=True, exist_ok=True)
-            url = f"{base}/{src}"
-            try:
-                request = urllib.request.Request(url, headers={"User-Agent": "builder"})
-                with urllib.request.urlopen(request, timeout=120) as resp, open(out, "wb") as fh:
-                    shutil.copyfileobj(resp, fh)
-                fetched += 1
-                print(f"  Downloaded {dst}")
-            except Exception as exc:
-                print(f"  Warning: could not fetch {url}: {exc}")
-                out.unlink(missing_ok=True)
-        if fetched == 0:
-            print("  Warning: no installer images fetched; boot menu will only offer the live session")
-
-    def _generate_preseed_file(self, preseed_path: Path):
-        """Generate a preseed configuration file for automated installation."""
-        hostname = self.cfg.get("hostname") or self.cfg["distro_name"].lower().replace(' ', '-')
-        locale = self.cfg["locale"]
-        timezone = self.cfg["timezone"]
-        username = self.cfg.get("live_username") or "user"
-        distro_name = self.cfg["distro_name"]
-        
-        # Get installer-specific options from config
-        installer_opts = self.cfg.get("installer_preseed_options", {})
-        partition_method = installer_opts.get("partition_method", "lvm")
-        install_tasks = installer_opts.get("tasks", "standard, ssh-server")
-        extra_packages = installer_opts.get("include_packages", "firmware-linux firmware-linux-nonfree network-manager sudo")
-        
-        preseed_content = f'''# Preseed configuration for {distro_name}
-# Generated automatically by build.py
-
-### Locale and Keyboard
-d-i debian-installer/locale string {locale}
-d-i console-setup/ask_detect boolean false
-d-i keyboard-configuration/xkb-keymap select us
-
-### Network Configuration
-d-i netcfg/choose_interface select auto
-d-i netcfg/get_hostname string {hostname}
-d-i netcfg/get_domain string local
-
-### Clock and Timezone
-d-i clock-setup/utc boolean true
-d-i time/zone string {timezone}
-d-i clock-setup/ntp boolean true
-
-### Partitioning
-d-i partman-auto/method string {partition_method}
-d-i partman-lvm/device_remove_lvm boolean true
-d-i partman-md/device_remove_md boolean true
-d-i partman-partitioning/confirm_write_new_label boolean true
-d-i partman/choose_partition select finish
-d-i partman/confirm boolean true
-d-i partman/confirm_nooverwrite boolean true
-
-### Package Selection
-tasksel tasksel/first multiselect {install_tasks}
-d-i pkgsel/include string {extra_packages}
-d-i pkgsel/install-language-support boolean false
-d-i pkgsel/update-policy select none
-
-### User Setup
-d-i passwd/user-fullname string {distro_name} User
-d-i passwd/username string {username}
-d-i passwd/root-login boolean false
-
-### GRUB Bootloader
-d-i grub-installer/only_debian boolean true
-d-i grub-installer/with_other_os boolean true
-d-i grub-installer/bootdev string default
-d-i grub-installer/force-efi-extra-removable boolean true
-
-### Finish Installation
-d-i finish-install/reboot_in_progress note
-'''
-        preseed_path.write_text(preseed_content)
-        print(f"  Generated preseed file: {preseed_path}")
-
-    def _create_installer_desktop(self):
-        """Create a desktop file to launch the Debian Installer."""
-        distro_name = self.cfg["distro_name"]
-        icon_name = self.cfg['hostname']
-        desktop_content = f'''[Desktop Entry]
-Type=Application
-Name=Install {distro_name}
-GenericName=System Installer
-Comment=Install {distro_name} on this computer
-TryExec=debian-installer-launcher
-Exec=debian-installer-launcher
-Icon={icon_name}
-Terminal=false
-StartupNotify=true
-Categories=Qt;System;
-Keywords=install;installer;system;{distro_name.lower()};
-'''
-        # Create in chroot for installed system
-        apps_dir = self.chroot / "usr" / "share" / "applications"
-        apps_dir.mkdir(parents=True, exist_ok=True)
-        desktop_filename = f"install-{self.cfg['hostname']}.desktop"
-        (apps_dir / desktop_filename).write_text(desktop_content)
-
-        # Also create in skel for new users
-        skel_apps = self.chroot / "etc" / "skel" / "Desktop"
-        skel_apps.mkdir(parents=True, exist_ok=True)
-        installer_desktop = skel_apps / desktop_filename
-        installer_desktop.write_text(desktop_content)
-        installer_desktop.chmod(0o755)
-
-        print("  Created installer desktop launcher")
 
     # -------------------------------------------------------------------------
     # User Accounts
@@ -988,31 +813,8 @@ menuentry "{distro} {version} (live, debug)" {{
 }}
 '''
 
-            # Branded installer boot entries, using the d-i netboot images
-            # shipped on the ISO (when they were fetched successfully).
-            install_dir = self.iso_root / "install"
-            preseed_path = f"/preseed/{self.cfg['hostname']}.preseed"
-            preseed_arg = f"file={preseed_path}" if (self.iso_root / "preseed").is_dir() else ""
-            if preseed_arg:
-                preseed_arg = f"{preseed_arg} auto=true priority=high"
-            installer_entries = ""
-            if (install_dir / "gtk" / "vmlinuz").is_file() and (install_dir / "gtk" / "initrd.gz").is_file():
-                installer_entries += f'''\
-menuentry "Install {distro} {version}" {{
-    linux  /install/gtk/vmlinuz {preseed_arg} quiet
-    initrd /install/gtk/initrd.gz
-}}
-
-'''
-            if (install_dir / "vmlinuz").is_file() and (install_dir / "initrd.gz").is_file():
-                installer_entries += f'''\
-menuentry "Install {distro} {version} (text mode)" {{
-    linux  /install/vmlinuz {preseed_arg}
-    initrd /install/initrd.gz
-}}
-
-'''
-            grub_cfg += installer_entries
+            # Installation is done from the live session (see the distro's
+            # installer hook); no separate installer boot entry is needed.
 
             # Brand the boot menu with the distribution background image.
             background = self.cfg.get("grub_background")
@@ -1183,7 +985,6 @@ menuentry "Install {distro} {version} (text mode)" {{
                 self.pre_chroot_scripts()
                 self.configure_apt()
                 self.install_packages()
-                self.setup_debian_installer()
                 self.configure_users()
                 self.configure_system()
                 self.post_install_scripts()

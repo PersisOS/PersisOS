@@ -104,7 +104,14 @@
     "kscreen",
     "live-config-systemd",
     "fwupd",
-    "debian-installer-launcher",
+    "calamares",
+    "qml-module-qtquick2",
+    "qml-module-qtquick-controls2",
+    "qml-module-qtquick-window2",
+    "qml-module-qtquick-dialogs",
+    "qml-module-org-kde-kconfig",
+    "qml-module-org-kde-kquickcontrolsaddons",
+    "qml-module-org-kde-kirigami2",
     "pkexec",
     "polkitd",
     "parted",
@@ -144,6 +151,7 @@
     "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
     "hooks/desktop/login-branding.sh",
+    "hooks/installer/calamares.sh",
     "hooks/desktop/cleanup-assets.sh"
   ],
   "boot_append": "quiet splash",
@@ -157,12 +165,6 @@
     "deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware",
     "deb http://deb.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
   ],
-  "installer_enabled": true,
-  "installer_preseed_options": {
-    "partition_method": "lvm",
-    "tasks": "standard, kde-desktop",
-    "include_packages": "firmware-linux network-manager sudo plasma-desktop sddm cups print-manager systemd-timesyncd firefox-esr vlc okular ark gwenview kate konsole kcalc kde-spectacle fastfetch network-manager-openvpn fonts-noto-core fonts-noto-color-emoji bash-completion man-db htop unattended-upgrades"
-  },
   "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "install_recommends": false,
   "os_release": {
