@@ -1,268 +1,170 @@
 import QtQuick 2.15
-import QtQuick.Controls 2.15
-import QtQuick.Layouts 1.15
 
-// PersisOS login — "violet night".
-// Wallpaper dimmed behind one frosted card: logo, username, password.
-// A thin orchid underline glows under whichever field has focus.
+// PersisOS splash — "violet night".
+// A single quiet composition: the logo rises out of a soft glow while a thin
+// accent line underneath fills in step with the real session startup stages.
 Rectangle {
     id: root
     color: "#141317"
+
+    // ksplashqml increments this as it passes each well-known startup stage.
+    property int stage
+    readonly property int totalStages: 6
 
     readonly property color brand: "#9738ba"
     readonly property color glow: "#b25ae8"
     readonly property color ink: "#f4eff8"
 
-    // SDDM reads this from theme.conf.
-    property string background: config.background || ""
+    onStageChanged: {
+        if (stage === 1) {
+            intro.start()
+        }
+    }
 
-    Image {
-        anchors.fill: parent
-        source: root.background
-        fillMode: Image.PreserveAspectCrop
-        smooth: true
+    // Soft radial glow behind the logo, built from translucent circles so no
+    // graphical-effects import is needed.
+    Item {
+        anchors.centerIn: logo
+        width: 460
+        height: 460
 
-        // Dim layer so the card always reads clearly.
         Rectangle {
-            anchors.fill: parent
-            color: "#0d0c11"
-            opacity: 0.55
-        }
-    }
-
-    // ---- login card --------------------------------------------------------
-    Rectangle {
-        id: card
-        anchors.centerIn: parent
-        width: 340
-        height: content.implicitHeight + 96
-        radius: 20
-        color: "#1b171f"
-        opacity: 0.92
-        border.color: root.brand
-        border.width: 1
-
-        ColumnLayout {
-            id: content
             anchors.centerIn: parent
-            width: parent.width - 56
-            spacing: 16
+            width: 440
+            height: 440
+            radius: 220
+            color: root.brand
+            opacity: 0.08
+        }
+        Rectangle {
+            anchors.centerIn: parent
+            width: 300
+            height: 300
+            radius: 150
+            color: root.glow
+            opacity: 0.07
+        }
 
-            Image {
-                source: "/usr/share/icons/hicolor/scalable/apps/persisos.svg"
-                sourceSize.width: 84
-                sourceSize.height: 84
-                Layout.alignment: Qt.AlignHCenter
-                smooth: true
-            }
-
-            Text {
-                text: "PersisOS"
-                color: root.ink
-                font.pointSize: 17
-                font.letterSpacing: 5
-                Layout.alignment: Qt.AlignHCenter
-            }
-
-            // subtle divider
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: 1
-                color: "#ffffff"
-                opacity: 0.08
-            }
-
-            Text {
-                text: sddm.hostName
-                color: root.ink
-                opacity: 0.5
-                font.pointSize: 10
-                elide: Text.ElideRight
-                Layout.alignment: Qt.AlignHCenter
-                visible: sddm.hostName !== ""
-            }
-
-            ColumnLayout {
-                spacing: 4
-                Layout.fillWidth: true
-
-                Text {
-                    text: "User"
-                    color: root.ink
-                    opacity: 0.55
-                    font.pointSize: 9
-                    font.letterSpacing: 1
-                }
-                PersisField {
-                    id: userField
-                    Layout.fillWidth: true
-                    text: sddm.lastUser
-                    onAccepted: passwordField.forceActiveFocus()
-                }
-            }
-
-            ColumnLayout {
-                spacing: 4
-                Layout.fillWidth: true
-
-                Text {
-                    text: "Password"
-                    color: root.ink
-                    opacity: 0.55
-                    font.pointSize: 9
-                    font.letterSpacing: 1
-                }
-                PersisField {
-                    id: passwordField
-                    Layout.fillWidth: true
-                    echoMode: TextInput.Password
-                    onAccepted: root.tryLogin()
-                    onTextEdited: hint.text = ""
-                }
-            }
-
-            Text {
-                id: hint
-                text: ""
-                color: root.glow
-                font.pointSize: 9
-                Layout.alignment: Qt.AlignHCenter
-                visible: text !== ""
-            }
-
-            ComboBox {
-                id: sessionSelector
-                model: sessionModel
-                textRole: "name"
-                currentIndex: sddm.lastSession
-                Layout.fillWidth: true
-                implicitHeight: 34
-
-                contentItem: Text {
-                    text: sessionSelector.displayText
-                    color: root.ink
-                    opacity: 0.6
-                    font.pointSize: 9
-                    verticalAlignment: Text.AlignVCenter
-                    leftPadding: 10
-                    elide: Text.ElideRight
-                }
-                background: Rectangle {
-                    radius: 8
-                    color: "#241e2b"
-                    border.color: "#3a3142"
-                    border.width: 1
-                }
-            }
-
-            Button {
-                id: loginButton
-                text: "Log in"
-                Layout.fillWidth: true
-                hoverEnabled: true
-
-                contentItem: Text {
-                    text: loginButton.text
-                    color: "#ffffff"
-                    font.pointSize: 11
-                    font.letterSpacing: 1
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                background: Rectangle {
-                    radius: 10
-                    color: loginButton.hovered ? Qt.lighter(root.brand, 1.15) : root.brand
-                }
-                onClicked: root.tryLogin()
-            }
+        // The glow breathes very slowly; barely visible, but keeps the
+        // screen from feeling like a frozen frame.
+        SequentialAnimation on opacity {
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.75; duration: 3200; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 1.0; duration: 3200; easing.type: Easing.InOutSine }
         }
     }
 
-    // ---- power buttons -----------------------------------------------------
-    Row {
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.margins: 24
-        spacing: 12
+    Item {
+        id: logoSlot
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -26
+        width: 168
+        height: 168
 
-        PowerButton { label: "Restart"; mode: "reboot" }
-        PowerButton { label: "Shut down"; mode: "poweroff" }
+        Image {
+            id: logo
+            source: "/usr/share/icons/hicolor/scalable/apps/persisos.svg"
+            sourceSize.width: 168
+            sourceSize.height: 168
+            width: 168
+            height: 168
+            y: 18
+            opacity: 0
+            smooth: true
+
+            ParallelAnimation {
+                id: intro
+                NumberAnimation {
+                    target: logo
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 700
+                    easing.type: Easing.OutQuad
+                }
+                NumberAnimation {
+                    target: logo
+                    property: "y"
+                    from: 18
+                    to: 0
+                    duration: 700
+                    easing.type: Easing.OutCubic
+                }
+                NumberAnimation {
+                    target: wordmark
+                    property: "opacity"
+                    from: 0
+                    to: 1
+                    duration: 900
+                    easing.type: Easing.OutQuad
+                }
+            }
+        }
     }
 
     Text {
-        anchors.bottom: parent.bottom
-        anchors.left: parent.left
-        anchors.margins: 24
+        id: wordmark
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: logo.bottom
+        anchors.topMargin: 28
         text: "PersisOS"
         color: root.ink
-        opacity: 0.35
-        font.pointSize: 10
-        font.letterSpacing: 3
+        font.pointSize: 22
+        font.letterSpacing: 6
+        opacity: 0
     }
 
-    function tryLogin() {
-        if (userField.text === "") {
-            hint.text = "Enter your username"
-            return
+    // Thin progress line, tied to actual startup stages.
+    Item {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: wordmark.bottom
+        anchors.topMargin: 22
+        width: 220
+        height: 2
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 1
+            color: "#ffffff"
+            opacity: 0.12
         }
-        sddm.login(userField.text, passwordField.text, sessionSelector.currentIndex)
-    }
-
-    Connections {
-        target: sddm
-        function onLoginFailed() {
-            hint.text = "Wrong password"
-            passwordField.selectAll()
-        }
-    }
-
-    Component.onCompleted: {
-        if (sddm.lastUser !== "") {
-            passwordField.forceActiveFocus()
-        } else {
-            userField.forceActiveFocus()
-        }
-    }
-
-    // ---- small components ---------------------------------------------------
-    component PersisField: TextField {
-        id: field
-        color: root.ink
-        font.pointSize: 11
-        selectByMouse: true
-        background: Rectangle {
-            radius: 8
-            color: "#241e2b"
-            border.color: field.activeFocus ? root.glow : "#3a3142"
-            border.width: 1
-
-            // animated accent underline
-            Rectangle {
-                anchors.bottom: parent.bottom
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: field.activeFocus ? parent.width - 16 : 0
-                height: 2
-                radius: 1
-                color: root.glow
-                Behavior on width {
-                    NumberAnimation { duration: 220; easing.type: Easing.OutCubic }
-                }
+        Rectangle {
+            anchors.left: parent.left
+            anchors.top: parent.top
+            height: parent.height
+            radius: 1
+            width: parent.width * Math.min(1, root.stage / root.totalStages)
+            color: root.glow
+            Behavior on width {
+                NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
             }
         }
     }
 
-    component PowerButton: AbstractButton {
-        id: powerButton
-        property string label
-        property string mode
-        hoverEnabled: true
+    Text {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.verticalCenter
+        anchors.topMargin: 130
+        text: "Starting session"
+        color: root.ink
+        opacity: 0.45
+        font.pointSize: 11
+        font.letterSpacing: 2
 
-        contentItem: Text {
-            text: powerButton.label
-            color: powerButton.hovered ? root.glow : root.ink
-            opacity: powerButton.hovered ? 1 : 0.55
-            font.pointSize: 10
+        SequentialAnimation on opacity {
+            loops: Animation.Infinite
+            NumberAnimation { to: 0.18; duration: 1400; easing.type: Easing.InOutSine }
+            NumberAnimation { to: 0.45; duration: 1400; easing.type: Easing.InOutSine }
         }
-        onClicked: mode === "reboot" ? sddm.reboot() : sddm.powerOff()
+    }
+
+    // Fade the whole splash out once the session signals its last stage.
+    NumberAnimation {
+        target: root
+        property: "opacity"
+        to: 0
+        duration: 250
+        running: root.stage >= root.totalStages
     }
 }
