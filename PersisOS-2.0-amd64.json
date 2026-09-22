@@ -151,7 +151,6 @@
     "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
     "hooks/desktop/login-branding.sh",
-    "hooks/installer/calamares.sh",
     "hooks/desktop/cleanup-assets.sh"
   ],
   "boot_append": "quiet splash",

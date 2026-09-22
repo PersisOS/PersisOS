@@ -1,0 +1,25 @@
+---
+componentName: PersisOS
+
+strings:
+    productName:         "PersisOS GNU/Linux"
+    productVersion:      "2.0"
+    productUrl:          "persisos.arshavirm.com"
+    supportUrl:          "https://github.com/arshavirm/PersisOS/issues"
+    knownIssuesUrl:      "https://github.com/arshavirm/PersisOS/issues"
+    releaseNotesUrl:     "https://github.com/arshavirm/PersisOS/releases"
+
+images:
+    productLogo:         "logo.svg"
+    productIcon:         "logo.svg"
+    productWelcome:      "logo.svg"
+
+slideshow:               "slideshow.qml"
+
+style:
+   Sidebar: "widget"
+   Navigation: "widget"
+
+window:
+    width: 960px
+    height: 600px
