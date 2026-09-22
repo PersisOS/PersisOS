@@ -148,6 +148,7 @@
     "hooks/desktop/desktop-defaults.sh",
     "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
+    "hooks/desktop/calamares.sh",
     "hooks/desktop/login-branding.sh",
     "hooks/desktop/cleanup-assets.sh"
   ],
