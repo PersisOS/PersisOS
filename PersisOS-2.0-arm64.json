@@ -39,7 +39,6 @@
     "kwin-x11",
     "kwin-wayland",
     "plasma-workspace",
-    "plasma-workspace-wayland",
     "breeze",
     "breeze-gtk-theme",
     "plasma-nm",
@@ -171,7 +170,6 @@
       "apparmor",
       "unattended-upgrades",
       "nftables",
-      "systemd-timesyncd",
       "cups"
     ]
   }
