@@ -143,9 +143,9 @@
     "hooks/desktop/plasma-assets.sh",
     "hooks/desktop/theme-command.sh",
     "hooks/desktop/desktop-defaults.sh",
-    "hooks/desktop/flatpak.sh",
     "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
+    "hooks/desktop/flatpak.sh",
     "hooks/desktop/calamares.sh",
     "hooks/desktop/login-branding.sh",
     "hooks/desktop/cleanup-assets.sh"
@@ -155,7 +155,7 @@
   "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
   "os_release": {
     "NAME": "PersisOS",
-    "PRETTY_NAME": "PersisOS 2.0 (trixie)",
+    "PRETTY_NAME": "PersisOS 2.0 (trixie) AMD64",
     "ID": "persisos",
     "ID_LIKE": "debian",
     "VERSION": "2.0",
