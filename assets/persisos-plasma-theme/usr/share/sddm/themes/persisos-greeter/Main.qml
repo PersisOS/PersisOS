@@ -1,170 +1,290 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.15
 
-// PersisOS splash — "violet night".
-// A single quiet composition: the logo rises out of a soft glow while a thin
-// accent line underneath fills in step with the real session startup stages.
-Rectangle {
+Item {
     id: root
-    color: "#141317"
+    width: 1600
+    height: 900
 
-    // ksplashqml increments this as it passes each well-known startup stage.
-    property int stage
-    readonly property int totalStages: 6
+    readonly property color ink: "#f7f4fb"
+    readonly property color muted: "#c2bbcc"
+    readonly property color accent: "#bd73df"
+    property string message: ""
+    property real welcomeIntroOffset: 24
 
-    readonly property color brand: "#9738ba"
-    readonly property color glow: "#b25ae8"
-    readonly property color ink: "#f4eff8"
+    Image {
+        anchors.fill: parent
+        source: config.background
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+    }
 
-    onStageChanged: {
-        if (stage === 1) {
-            intro.start()
+    Rectangle {
+        anchors.fill: parent
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: "#10101730" }
+            GradientStop { position: 0.48; color: "#10101788" }
+            GradientStop { position: 1.0; color: "#101017e8" }
         }
     }
 
-    // Soft radial glow behind the logo, built from translucent circles so no
-    // graphical-effects import is needed.
-    Item {
-        anchors.centerIn: logo
-        width: 460
-        height: 460
-
-        Rectangle {
-            anchors.centerIn: parent
-            width: 440
-            height: 440
-            radius: 220
-            color: root.brand
-            opacity: 0.08
-        }
-        Rectangle {
-            anchors.centerIn: parent
-            width: 300
-            height: 300
-            radius: 150
-            color: root.glow
-            opacity: 0.07
-        }
-
-        // The glow breathes very slowly; barely visible, but keeps the
-        // screen from feeling like a frozen frame.
-        SequentialAnimation on opacity {
-            loops: Animation.Infinite
-            NumberAnimation { to: 0.75; duration: 3200; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 1.0; duration: 3200; easing.type: Easing.InOutSine }
-        }
+    Rectangle {
+        anchors.fill: parent
+        color: "#111018"
+        opacity: 0.16
     }
 
-    Item {
-        id: logoSlot
-        anchors.horizontalCenter: parent.horizontalCenter
+    Column {
+        id: welcome
+        anchors.left: parent.left
+        anchors.leftMargin: Math.max(48, root.width * 0.105)
         anchors.verticalCenter: parent.verticalCenter
-        anchors.verticalCenterOffset: -26
-        width: 168
-        height: 168
+        width: Math.min(480, root.width * 0.38)
+        spacing: 18
+        opacity: 0
+        anchors.verticalCenterOffset: root.welcomeIntroOffset
 
         Image {
-            id: logo
             source: "/usr/share/icons/hicolor/scalable/apps/persisos.svg"
-            sourceSize.width: 168
-            sourceSize.height: 168
-            width: 168
-            height: 168
-            y: 18
-            opacity: 0
+            sourceSize.width: 72
+            sourceSize.height: 72
+            width: 72
+            height: 72
             smooth: true
+        }
 
-            ParallelAnimation {
-                id: intro
-                NumberAnimation {
-                    target: logo
-                    property: "opacity"
-                    from: 0
-                    to: 1
-                    duration: 700
-                    easing.type: Easing.OutQuad
-                }
-                NumberAnimation {
-                    target: logo
-                    property: "y"
-                    from: 18
-                    to: 0
-                    duration: 700
-                    easing.type: Easing.OutCubic
-                }
-                NumberAnimation {
-                    target: wordmark
-                    property: "opacity"
-                    from: 0
-                    to: 1
-                    duration: 900
-                    easing.type: Easing.OutQuad
-                }
-            }
+        Text {
+            text: "Welcome to"
+            color: root.muted
+            font.family: "Noto Sans"
+            font.pixelSize: 20
+        }
+
+        Text {
+            text: "PersisOS"
+            color: root.ink
+            font.family: "Noto Sans"
+            font.pixelSize: Math.min(64, root.width * 0.052)
+            font.weight: Font.DemiBold
+        }
+
+        Rectangle {
+            width: 56
+            height: 3
+            radius: 2
+            color: root.accent
+        }
+
+        Text {
+            width: parent.width
+            text: "A calm, capable desktop, ready when you are."
+            color: root.muted
+            font.family: "Noto Sans"
+            font.pixelSize: 17
+            wrapMode: Text.WordWrap
+        }
+
+        Behavior on opacity {
+            NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
+        }
+        Behavior on welcomeIntroOffset {
+            NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
         }
     }
 
-    Text {
-        id: wordmark
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: logo.bottom
-        anchors.topMargin: 28
-        text: "PersisOS"
-        color: root.ink
-        font.pointSize: 22
-        font.letterSpacing: 6
+    Rectangle {
+        id: loginCard
+        width: Math.min(390, root.width * 0.34)
+        height: form.implicitHeight + 72
+        anchors.right: parent.right
+        anchors.rightMargin: Math.max(48, root.width * 0.12)
+        anchors.verticalCenter: parent.verticalCenter
+        radius: 22
+        color: "#201d28"
+        border.width: 1
+        border.color: "#ffffff20"
         opacity: 0
-    }
+        scale: 0.97
 
-    // Thin progress line, tied to actual startup stages.
-    Item {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: wordmark.bottom
-        anchors.topMargin: 22
-        width: 220
-        height: 2
-
-        Rectangle {
+        Column {
+            id: form
             anchors.fill: parent
-            radius: 1
-            color: "#ffffff"
-            opacity: 0.12
-        }
-        Rectangle {
-            anchors.left: parent.left
-            anchors.top: parent.top
-            height: parent.height
-            radius: 1
-            width: parent.width * Math.min(1, root.stage / root.totalStages)
-            color: root.glow
-            Behavior on width {
-                NumberAnimation { duration: 400; easing.type: Easing.OutCubic }
+            anchors.margins: 34
+            spacing: 14
+
+            Text {
+                text: "Sign in"
+                color: root.ink
+                font.family: "Noto Sans"
+                font.pixelSize: 26
+                font.weight: Font.DemiBold
+            }
+
+            Text {
+                text: "Continue to your PersisOS session"
+                color: root.muted
+                font.family: "Noto Sans"
+                font.pixelSize: 13
+            }
+
+            TextField {
+                id: username
+                width: parent.width
+                height: 48
+                text: userModel.lastUser
+                placeholderText: "Username"
+                font.family: "Noto Sans"
+                font.pixelSize: 15
+                color: root.ink
+                leftPadding: 14
+                background: Rectangle {
+                    radius: 10
+                    color: "#302b39"
+                    border.color: username.activeFocus ? root.accent : "#ffffff20"
+                }
+                onAccepted: password.forceActiveFocus()
+            }
+
+            TextField {
+                id: password
+                width: parent.width
+                height: 48
+                placeholderText: "Password"
+                echoMode: TextInput.Password
+                font.family: "Noto Sans"
+                font.pixelSize: 15
+                color: root.ink
+                leftPadding: 14
+                background: Rectangle {
+                    radius: 10
+                    color: "#302b39"
+                    border.color: password.activeFocus ? root.accent : "#ffffff20"
+                }
+                onAccepted: root.login()
+            }
+
+            ComboBox {
+                id: session
+                width: parent.width
+                height: 44
+                model: sessionModel
+                textRole: "name"
+                currentIndex: sessionModel.lastIndex
+                font.family: "Noto Sans"
+                font.pixelSize: 14
+                contentItem: Text {
+                    leftPadding: 12
+                    text: session.displayText
+                    color: root.ink
+                    font: session.font
+                    verticalAlignment: Text.AlignVCenter
+                    elide: Text.ElideRight
+                }
+                background: Rectangle {
+                    radius: 10
+                    color: "#302b39"
+                    border.color: session.activeFocus ? root.accent : "#ffffff20"
+                }
+            }
+
+            Text {
+                width: parent.width
+                text: root.message
+                color: "#ffb4ab"
+                font.family: "Noto Sans"
+                font.pixelSize: 13
+                wrapMode: Text.WordWrap
+                visible: text.length > 0
+            }
+
+            Button {
+                width: parent.width
+                height: 48
+                text: "Sign in"
+                font.family: "Noto Sans"
+                font.pixelSize: 15
+                font.weight: Font.DemiBold
+                contentItem: Text {
+                    text: parent.text
+                    color: "#ffffff"
+                    font: parent.font
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                }
+                background: Rectangle {
+                    radius: 10
+                    color: parent.down ? "#8d4daf" : "#a65dc9"
+                    Behavior on color { ColorAnimation { duration: 140 } }
+                }
+                onClicked: root.login()
+            }
+
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 12
+
+                Button {
+                    text: "Restart"
+                    enabled: sddm.canReboot
+                    onClicked: sddm.reboot()
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.enabled ? root.muted : "#77717e"
+                        font.family: "Noto Sans"
+                        font.pixelSize: 12
+                    }
+                }
+                Button {
+                    text: "Shut down"
+                    enabled: sddm.canPowerOff
+                    onClicked: sddm.powerOff()
+                    background: Rectangle { color: "transparent" }
+                    contentItem: Text {
+                        text: parent.text
+                        color: parent.enabled ? root.muted : "#77717e"
+                        font.family: "Noto Sans"
+                        font.pixelSize: 12
+                    }
+                }
             }
         }
-    }
 
-    Text {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.top: parent.verticalCenter
-        anchors.topMargin: 130
-        text: "Starting session"
-        color: root.ink
-        opacity: 0.45
-        font.pointSize: 11
-        font.letterSpacing: 2
-
-        SequentialAnimation on opacity {
-            loops: Animation.Infinite
-            NumberAnimation { to: 0.18; duration: 1400; easing.type: Easing.InOutSine }
-            NumberAnimation { to: 0.45; duration: 1400; easing.type: Easing.InOutSine }
+        Behavior on opacity {
+            NumberAnimation { duration: 650; easing.type: Easing.OutCubic }
+        }
+        Behavior on scale {
+            NumberAnimation { duration: 650; easing.type: Easing.OutBack }
         }
     }
 
-    // Fade the whole splash out once the session signals its last stage.
-    NumberAnimation {
-        target: root
-        property: "opacity"
-        to: 0
-        duration: 250
-        running: root.stage >= root.totalStages
+    function login() {
+        if (username.text.trim().length === 0) {
+            root.message = "Enter your username to continue."
+            username.forceActiveFocus()
+            return
+        }
+        root.message = ""
+        sddm.login(username.text, password.text, session.currentIndex)
+    }
+
+    Connections {
+        target: sddm
+        function onLoginFailed() {
+            root.message = "That password did not work. Please try again."
+            password.clear()
+            password.forceActiveFocus()
+        }
+    }
+
+    Component.onCompleted: {
+        welcome.opacity = 1
+        root.welcomeIntroOffset = 0
+        loginCard.opacity = 1
+        loginCard.scale = 1
+        if (username.text.length > 0)
+            password.forceActiveFocus()
+        else
+            username.forceActiveFocus()
     }
 }

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#21172f"/>
+      <stop offset="1" stop-color="#111923"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#d09aef"/>
+      <stop offset="1" stop-color="#8247bd"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#a84fd0" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#a84fd0" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="920" height="520" rx="30" fill="url(#bg)"/>
+  <circle cx="690" cy="210" r="260" fill="url(#glow)"/>
+  <path d="M0 410c170-68 267 34 420-26s299-124 500-61v197H0z" fill="#30213f" opacity=".72"/>
+  <path d="M0 455c176-50 287 40 466-14s305-77 454-45v124H0z" fill="#1b2933" opacity=".9"/>
+  <text x="76" y="170" fill="#d7c8e3" font-family="Noto Sans, sans-serif" font-size="18" letter-spacing="3">WELCOME TO</text>
+  <text x="72" y="236" fill="#fff" font-family="Noto Sans, sans-serif" font-size="54" font-weight="700">PersisOS</text>
+  <rect x="78" y="265" width="60" height="4" rx="2" fill="#c07de0"/>
+  <text x="76" y="313" fill="#ded8e5" font-family="Noto Sans, sans-serif" font-size="20">A thoughtful Linux desktop,</text>
+  <text x="76" y="343" fill="#ded8e5" font-family="Noto Sans, sans-serif" font-size="20">built for work and everyday life.</text>
+  <text x="76" y="405" fill="#a99eb5" font-family="Noto Sans, sans-serif" font-size="13" letter-spacing="1">DEBIAN GNU/LINUX · VERSION 2.0</text>
+</svg>

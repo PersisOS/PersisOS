@@ -29,11 +29,11 @@ colorScheme=BreezeDark
 shadingFraction=0.5
 font=Noto Sans,10,-1,5,400,0,0,0,0,0
 forceFontDPI=true
-fixed=Monospace,10,-1,5,400,0,0,0,0,0
-small=Sans Serif,9,-1,5,400,0,0,0,0,0
-toolbarFont=Sans Serif,10,-1,5,400,0,0,0,0,0
-menuFont=Sans Serif,10,-1,5,400,0,0,0,0,0
-windowFont=Sans Serif,10,-1,5,400,0,0,0,0,0
+fixed=Noto Sans Mono,10,-1,5,400,0,0,0,0,0
+small=Noto Sans,9,-1,5,400,0,0,0,0,0
+toolbarFont=Noto Sans,10,-1,5,400,0,0,0,0,0
+menuFont=Noto Sans,10,-1,5,400,0,0,0,0,0
+windowFont=Noto Sans,10,-1,5,400,0,0,0,0,0
 
 [WM]
 activeBlend=#9738ba

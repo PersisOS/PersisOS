@@ -119,7 +119,8 @@
     "vlc",
     "curl",
     "wget",
-    "htop"
+    "htop",
+    "squashfs-tools"
   ],
   "exclude_packages": [
     "plasma-welcome",
@@ -142,9 +143,9 @@
     "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
     "hooks/desktop/flatpak.sh",
-    "hooks/desktop/calamares.sh",
+    "hooks/common/install-calamares.sh",
     "hooks/desktop/login-branding.sh",
-    "hooks/desktop/cleanup-assets.sh"
+    "hooks/common/cleanup-assets.sh"
   ],
   "boot_append": "quiet splash",
   "squashfs_compression": "xz",

@@ -1,6 +1,6 @@
 #!/bin/bash
 set -eu
-printf '%s\n' 'PersisOS Server 2.0 \n \l' > /etc/issue
+printf 'PersisOS Server 2.0 \\n \\l\n' > /etc/issue
 printf 'PersisOS Server 2.0\n' > /etc/issue.net
 mkdir -p /etc/default/grub.d
 printf 'GRUB_DISTRIBUTOR="PersisOS Server 2.0"\n' > /etc/default/grub.d/50-persisos-server.cfg

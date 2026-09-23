@@ -116,7 +116,7 @@
   ],
   "exclude_packages": [],
   "pre_chroot_scripts": [
-    "hooks/desktop/stage-assets.sh"
+    "hooks/server/stage-assets.sh"
   ],
   "post_install_scripts": [
     "hooks/server/automatic-updates.sh",
@@ -125,7 +125,8 @@
     "hooks/server/journald.sh",
     "hooks/server/password-policy.sh",
     "hooks/server/login-branding.sh",
-    "hooks/desktop/calamares.sh"
+    "hooks/common/install-calamares.sh",
+    "hooks/common/cleanup-assets.sh"
   ],
   "boot_append": "quiet noautologin",
   "squashfs_compression": "xz",

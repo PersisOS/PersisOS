@@ -12,12 +12,17 @@ strings:
 images:
     productLogo:         "logo.svg"
     productIcon:         "logo.svg"
-    productWelcome:      "logo.svg"
+    productWelcome:      "welcome.svg"
+
+welcomeStyleCalamares: false
+welcomeExpandingLogo: false
+windowSize: 960px,600px
+windowPlacement: center
+sidebar: widget
+navigation: widget
 
 style:
-   Sidebar: "widget"
-   Navigation: "widget"
-
-window:
-    width: 960px
-    height: 600px
+    SidebarBackground: "#201b29"
+    SidebarText: "#e5deed"
+    SidebarTextCurrent: "#ffffff"
+    SidebarBackgroundCurrent: "#8247bd"
