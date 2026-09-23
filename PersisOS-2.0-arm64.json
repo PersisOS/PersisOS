@@ -69,7 +69,6 @@
     "plasma-discover",
     "plasma-discover-backend-flatpak",
     "flatpak",
-    "synaptic",
     "fonts-vazirmatn",
     "fonts-noto-core",
     "fonts-freefont-ttf",
@@ -111,7 +110,7 @@
     "vlc",
     "curl",
     "wget",
-    "htop",
+    "plasma-systemmonitor",
     "squashfs-tools"
   ],
   "exclude_packages": [
