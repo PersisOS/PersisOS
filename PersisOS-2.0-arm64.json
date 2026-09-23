@@ -151,9 +151,9 @@
     "VARIANT": "Desktop ARM64",
     "VARIANT_ID": "desktop-arm64",
     "LOGO": "persisos",
-    "HOME_URL": "https://github.com/arshavirm/PersisOS",
-    "SUPPORT_URL": "https://github.com/arshavirm/PersisOS",
-    "BUG_REPORT_URL": "https://github.com/arshavirm/PersisOS/issues"
+    "HOME_URL": "https://github.com/PersisOS/PersisOS",
+    "SUPPORT_URL": "https://github.com/PersisOS/PersisOS",
+    "BUG_REPORT_URL": "https://github.com/PersisOS/PersisOS/issues"
   },
   "install_recommends": false,
   "services": {

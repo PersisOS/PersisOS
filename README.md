@@ -1,8 +1,8 @@
 
 # PersisOS
 
-[![Build](https://github.com/arshavirm/PersisOS/actions/workflows/build.yml/badge.svg)](https://github.com/arshavirm/PersisOS/actions/workflows/build.yml)
-[![Build PersisOS Server](https://github.com/arshavirm/PersisOS/actions/workflows/server-build.yml/badge.svg)](https://github.com/arshavirm/PersisOS/actions/workflows/server-build.yml)
+[![Build](https://github.com/PersisOS/PersisOS/actions/workflows/build.yml/badge.svg)](https://github.com/PersisOS/PersisOS/actions/workflows/build.yml)
+[![Build PersisOS Server](https://github.com/PersisOS/PersisOS/actions/workflows/server-build.yml/badge.svg)](https://github.com/PersisOS/PersisOS/actions/workflows/server-build.yml)
 ![Debian](https://img.shields.io/badge/base-Debian%2013-A81D33?logo=debian&logoColor=white)
 ![Architectures](https://img.shields.io/badge/architectures-amd64%20%7C%20arm64-4B6CB7)
 

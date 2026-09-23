@@ -5,9 +5,9 @@ strings:
     productName:         "PersisOS GNU/Linux"
     productVersion:      "2.0"
     productUrl:          "persisos.arshavirm.com"
-    supportUrl:          "https://github.com/arshavirm/PersisOS/issues"
-    knownIssuesUrl:      "https://github.com/arshavirm/PersisOS/issues"
-    releaseNotesUrl:     "https://github.com/arshavirm/PersisOS/releases"
+    supportUrl:          "https://github.com/PersisOS/PersisOS/issues"
+    knownIssuesUrl:      "https://github.com/PersisOS/PersisOS/issues"
+    releaseNotesUrl:     "https://github.com/PersisOS/PersisOS/releases"
 
 images:
     productLogo:         "logo.svg"
