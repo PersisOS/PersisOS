@@ -99,21 +99,37 @@
     "podman-compose",
     "uidmap",
     "slirp4netns",
-    "qemu-guest-agent"
+    "qemu-guest-agent",
+    "calamares",
+    "qml-module-org-kde-kirigami2",
+    "qml-module-qtquick2",
+    "qml-module-qtquick-controls2",
+    "qml-module-qtquick-layouts",
+    "qml-module-qtquick-window2",
+    "parted",
+    "gdisk",
+    "dosfstools",
+    "e2fsprogs",
+    "ntfs-3g",
+    "os-prober",
+    "efibootmgr"
   ],
   "exclude_packages": [],
-  "pre_chroot_scripts": [],
+  "pre_chroot_scripts": [
+    "hooks/desktop/stage-assets.sh"
+  ],
   "post_install_scripts": [
     "hooks/server/automatic-updates.sh",
     "hooks/server/firewall.sh",
     "hooks/server/sysctl.sh",
     "hooks/server/journald.sh",
     "hooks/server/password-policy.sh",
-    "hooks/server/login-branding.sh"
+    "hooks/server/login-branding.sh",
+    "hooks/desktop/calamares.sh"
   ],
   "boot_append": "quiet noautologin",
   "squashfs_compression": "xz",
-  "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
+  "grub_background": "assets/wallpapers/Lake/contents/images/2560x1600.png",
   "os_release": {
     "NAME": "PersisOS Server",
     "PRETTY_NAME": "PersisOS Server 2.0 (trixie)",

@@ -14,8 +14,6 @@ images:
     productIcon:         "logo.svg"
     productWelcome:      "logo.svg"
 
-slideshow:               "slideshow.qml"
-
 style:
    Sidebar: "widget"
    Navigation: "widget"

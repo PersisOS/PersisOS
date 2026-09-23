@@ -148,7 +148,7 @@
   ],
   "boot_append": "quiet splash",
   "squashfs_compression": "xz",
-  "grub_background": "assets/wallpapers/PersisOS-1/contents/images/2560x1600.png",
+  "grub_background": "assets/wallpapers/Lake/contents/images/2560x1600.png",
   "os_release": {
     "NAME": "PersisOS",
     "PRETTY_NAME": "PersisOS 2.0 (trixie) AMD64",
