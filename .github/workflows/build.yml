@@ -1,33 +1,49 @@
-name: Build PersisOS
+name: Build & Validate PersisOS
 
 on:
   push:
     branches: [main]
     paths:
-      - "PersisOS-2.0-*.json"
-      - "build.py"
-      - "hooks/**"
-      - "scripts/**"
-      - "tests/**"
-      - "examples/**"
-      - ".github/workflows/**"
+      - 'PersisOS-2.0-*.json'
+      - 'PersisOS-Server-2.0-*.json'
+      - 'build.py'
+      - 'hooks/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'examples/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [main]
     paths:
-      - "PersisOS-2.0-*.json"
-      - "build.py"
-      - "hooks/**"
-      - "scripts/**"
-      - "tests/**"
-      - "examples/**"
-      - ".github/workflows/**"
+      - 'PersisOS-2.0-*.json'
+      - 'PersisOS-Server-2.0-*.json'
+      - 'build.py'
+      - 'hooks/**'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'examples/**'
+      - '.github/workflows/**'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unit tests and manifests
+        run: |
+          python3 -m unittest discover -s tests -v
+          for config in PersisOS*.json examples/*.json; do
+            python3 build.py "$config" --validate
+          done
+          find hooks scripts -name '*.sh' -exec bash -n {} \;
+
+  build-desktop:
+    needs: validate
     strategy:
       fail-fast: false
       matrix:
@@ -41,3 +57,11 @@ jobs:
       config: PersisOS-2.0-${{ matrix.arch }}.json
       runner: ${{ matrix.runner }}
       artifact: persisos-${{ matrix.arch }}
+
+  build-server:
+    needs: validate
+    uses: ./.github/workflows/image.yml
+    with:
+      config: PersisOS-Server-2.0-amd64.json
+      runner: ubuntu-latest
+      artifact: persisos-server-amd64
