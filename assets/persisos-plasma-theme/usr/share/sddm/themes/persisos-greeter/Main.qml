@@ -56,14 +56,14 @@ Item {
         Text {
             text: "Welcome to"
             color: root.muted
-            font.family: "Noto Sans"
+            font.family: "Inter"
             font.pixelSize: 20
         }
 
         Text {
             text: "PersisOS"
             color: root.ink
-            font.family: "Noto Sans"
+            font.family: "Inter"
             font.pixelSize: Math.min(64, root.width * 0.052)
             font.weight: Font.DemiBold
         }
@@ -79,7 +79,7 @@ Item {
             width: parent.width
             text: "A calm, capable desktop, ready when you are."
             color: root.muted
-            font.family: "Noto Sans"
+            font.family: "Inter"
             font.pixelSize: 17
             wrapMode: Text.WordWrap
         }
@@ -115,7 +115,7 @@ Item {
             Text {
                 text: "Sign in"
                 color: root.ink
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 26
                 font.weight: Font.DemiBold
             }
@@ -123,7 +123,7 @@ Item {
             Text {
                 text: "Continue to your PersisOS session"
                 color: root.muted
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 13
             }
 
@@ -133,7 +133,7 @@ Item {
                 height: 48
                 text: userModel.lastUser
                 placeholderText: "Username"
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 15
                 color: root.ink
                 leftPadding: 14
@@ -151,7 +151,7 @@ Item {
                 height: 48
                 placeholderText: "Password"
                 echoMode: TextInput.Password
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 15
                 color: root.ink
                 leftPadding: 14
@@ -170,7 +170,7 @@ Item {
                 model: sessionModel
                 textRole: "name"
                 currentIndex: sessionModel.lastIndex
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 14
                 contentItem: Text {
                     leftPadding: 12
@@ -191,7 +191,7 @@ Item {
                 width: parent.width
                 text: root.message
                 color: "#ffb4ab"
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 13
                 wrapMode: Text.WordWrap
                 visible: text.length > 0
@@ -201,7 +201,7 @@ Item {
                 width: parent.width
                 height: 48
                 text: "Sign in"
-                font.family: "Noto Sans"
+                font.family: "Inter"
                 font.pixelSize: 15
                 font.weight: Font.DemiBold
                 contentItem: Text {
@@ -231,7 +231,7 @@ Item {
                     contentItem: Text {
                         text: parent.text
                         color: parent.enabled ? root.muted : "#77717e"
-                        font.family: "Noto Sans"
+                        font.family: "Inter"
                         font.pixelSize: 12
                     }
                 }
@@ -243,7 +243,7 @@ Item {
                     contentItem: Text {
                         text: parent.text
                         color: parent.enabled ? root.muted : "#77717e"
-                        font.family: "Noto Sans"
+                        font.family: "Inter"
                         font.pixelSize: 12
                     }
                 }

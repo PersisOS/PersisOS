@@ -10,7 +10,7 @@ PersisOS is a Debian 13-based operating system available as a polished KDE
 Plasma desktop and a headless server edition. The desktop ships with a focused
 set of everyday applications and a branded Plasma experience. The server image
 provides administration, diagnostics, storage, networking, security, container,
-and virtualization tools without a graphical stack.
+and virtualization tools, with a minimal graphical stack for its installer.
 
 ## Design goals
 
@@ -74,9 +74,10 @@ sudo python3 build.py PersisOS-Server-2.0-amd64.json \
   --workdir build-server --outdir output-server
 ```
 
-The server live account is `admin` with password `persisos`. SSH is installed
-but intentionally disabled on live media until the administrator changes that
-password and enables the service.
+The server live account is `admin` with password `persisos`. Run
+`install-persisos` from a local console with a display attached to start
+Calamares. SSH is installed but intentionally disabled on live media until the
+administrator changes that password and enables the service.
 
 ## Project layout
 

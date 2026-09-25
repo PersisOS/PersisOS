@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+if [ "$(id -u)" -eq 0 ]; then
+    exec startx /usr/bin/calamares -- :0
+fi
+
+exec startx /usr/bin/sudo -E /usr/bin/calamares -- :0

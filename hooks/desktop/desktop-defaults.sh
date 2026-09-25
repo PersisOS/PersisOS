@@ -2,6 +2,18 @@
 set -e
 echo 'Applying desktop, xdg and SDDM config'
 cp -a /.temp_assets/persisos-plasma-theme/etc/xdg/. /etc/xdg/
+install -d -m 0755 /etc/fonts/conf.d
+cat > /etc/fonts/conf.d/99-persisos-default-fonts.conf <<'EOF'
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <alias>
+    <family>sans-serif</family>
+    <prefer><family>Inter</family><family>Noto Sans</family></prefer>
+  </alias>
+</fontconfig>
+EOF
+fc-cache -f
 mkdir -p /etc/sddm.conf.d /etc/skel/Desktop
 cp -a /.temp_assets/persisos-plasma-theme/etc/sddm.conf.d/. /etc/sddm.conf.d/
 cp -a /.temp_assets/persisos-plasma-theme/etc/skel/Desktop/. /etc/skel/Desktop/

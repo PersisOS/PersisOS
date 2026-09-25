@@ -58,7 +58,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "PersisOS"
             color: root.foreground
-            font.family: "Noto Sans"
+            font.family: "Inter"
             font.pointSize: 25
             font.weight: Font.DemiBold
             font.letterSpacing: 1.2
@@ -76,7 +76,7 @@ Rectangle {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Preparing your desktop"
             color: "#c8bfce"
-            font.family: "Noto Sans"
+            font.family: "Inter"
             font.pointSize: 11
         }
 

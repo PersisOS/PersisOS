@@ -13,4 +13,7 @@ SSH is installed but disabled on live media. After changing the password, run:
   sudo systemctl enable --now ssh
 
 Use nmcli for network configuration and nft for firewall management.
+
+To install PersisOS, connect a display and run:
+  install-persisos
 EOF

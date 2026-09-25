@@ -27,13 +27,13 @@ DecorationHover=#b25ae8
 widgetStyle=breeze
 colorScheme=BreezeDark
 shadingFraction=0.5
-font=Noto Sans,10,-1,5,400,0,0,0,0,0
+font=Inter,10,-1,5,400,0,0,0,0,0
 forceFontDPI=true
 fixed=Noto Sans Mono,10,-1,5,400,0,0,0,0,0
-small=Noto Sans,9,-1,5,400,0,0,0,0,0
-toolbarFont=Noto Sans,10,-1,5,400,0,0,0,0,0
-menuFont=Noto Sans,10,-1,5,400,0,0,0,0,0
-windowFont=Noto Sans,10,-1,5,400,0,0,0,0,0
+small=Inter,9,-1,5,400,0,0,0,0,0
+toolbarFont=Inter,10,-1,5,400,0,0,0,0,0
+menuFont=Inter,10,-1,5,400,0,0,0,0,0
+windowFont=Inter,10,-1,5,400,0,0,0,0,0
 
 [WM]
 activeBlend=#9738ba
