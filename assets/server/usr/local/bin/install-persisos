@@ -1,8 +1,102 @@
-#!/bin/sh
-set -eu
+#!/bin/bash
+set -Eeuo pipefail
 
-if [ "$(id -u)" -eq 0 ]; then
-    exec startx /usr/bin/calamares -- :0
+TARGET=/mnt/persisos-install
+cleanup() {
+    mountpoint -q "$TARGET/boot/efi" && umount -R "$TARGET/boot/efi" || true
+    mountpoint -q "$TARGET" && umount -R "$TARGET" || true
+    rmdir "$TARGET" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+fail() { echo "Installer: $*" >&2; exit 1; }
+
+[[ $EUID -eq 0 ]] || fail 'run this command with sudo.'
+for command in lsblk sfdisk mkfs.ext4 rsync mount umount chroot grub-install; do
+    command -v "$command" >/dev/null || fail "required command is missing: $command"
+done
+
+echo 'PersisOS Server 2.0 command-line installer'
+echo
+lsblk -d -o NAME,SIZE,MODEL,TYPE | awk 'NR == 1 || $4 == "disk"'
+echo
+read -r -p 'Target disk (for example /dev/sda): ' DISK
+[[ -b "$DISK" ]] || fail "not a block device: $DISK"
+[[ $(lsblk -dn -o TYPE "$DISK") == disk ]] || fail 'select a whole disk, not a partition.'
+[[ $(findmnt -n -o SOURCE /) != "$DISK"* ]] || fail 'the selected disk contains the running root filesystem.'
+if lsblk -nrpo MOUNTPOINT "$DISK" | grep -q .; then
+    fail 'the selected disk has mounted filesystems; unmount them before installing.'
 fi
 
-exec startx /usr/bin/sudo -E /usr/bin/calamares -- :0
+echo
+echo "ALL DATA on $DISK will be erased."
+read -r -p "Type ERASE $(basename "$DISK") to continue: " CONFIRM
+[[ "$CONFIRM" == "ERASE $(basename "$DISK")" ]] || fail 'confirmation did not match; no changes made.'
+read -r -s -p 'New password for the admin account: ' PASSWORD; echo
+read -r -s -p 'Repeat password: ' PASSWORD_AGAIN; echo
+[[ -n "$PASSWORD" && "$PASSWORD" == "$PASSWORD_AGAIN" ]] || fail 'passwords are empty or do not match.'
+
+if [[ -d /sys/firmware/efi ]]; then
+    MODE=uefi
+else
+    MODE=bios
+fi
+if [[ "$DISK" =~ [0-9]$ ]]; then SEP=p; else SEP=; fi
+ROOT_PART="${DISK}${SEP}2"
+EFI_PART="${DISK}${SEP}1"
+
+echo "Installing in $MODE mode."
+umount "${DISK}"?* 2>/dev/null || true
+if [[ "$MODE" == uefi ]]; then
+    printf 'label: gpt\n,512M,U\n,,L\n' | sfdisk "$DISK"
+else
+    printf 'label: gpt\n,1M,BIOS\n,,L\n' | sfdisk "$DISK"
+fi
+partprobe "$DISK"
+udevadm settle
+for _ in {1..10}; do [[ -b "$ROOT_PART" ]] && break; sleep 1; done
+[[ -b "$ROOT_PART" ]] || fail 'partition devices did not appear.'
+if [[ "$MODE" == uefi ]]; then
+    [[ -b "$EFI_PART" ]] || fail 'EFI partition device did not appear.'
+    mkfs.fat -F32 "$EFI_PART"
+fi
+mkfs.ext4 -F "$ROOT_PART"
+mkdir -p "$TARGET"
+mount "$ROOT_PART" "$TARGET"
+if [[ "$MODE" == uefi ]]; then
+    mkdir -p "$TARGET/boot/efi"
+    mount "$EFI_PART" "$TARGET/boot/efi"
+fi
+
+echo 'Copying the live system to disk...'
+rsync -aHAX --numeric-ids --delete \
+    --exclude=/dev/ --exclude=/proc/ --exclude=/sys/ --exclude=/run/ \
+    --exclude=/tmp/ --exclude=/mnt/ --exclude=/media/ --exclude=/live/ \
+    --exclude=/var/tmp/ --exclude=/etc/fstab --exclude=/etc/mtab \
+    / "$TARGET/"
+ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
+if [[ "$MODE" == uefi ]]; then
+    EFI_UUID=$(blkid -s UUID -o value "$EFI_PART")
+    printf 'UUID=%s / ext4 errors=remount-ro 0 1\nUUID=%s /boot/efi vfat umask=0077 0 1\n' "$ROOT_UUID" "$EFI_UUID" > "$TARGET/etc/fstab"
+else
+    printf 'UUID=%s / ext4 errors=remount-ro 0 1\n' "$ROOT_UUID" > "$TARGET/etc/fstab"
+fi
+printf '%s\n' "$PASSWORD" | chroot "$TARGET" chpasswd
+unset PASSWORD PASSWORD_AGAIN
+
+mount --bind /dev "$TARGET/dev"
+mount --bind /dev/pts "$TARGET/dev/pts"
+mount -t proc proc "$TARGET/proc"
+mount -t sysfs sysfs "$TARGET/sys"
+if [[ -d /sys/firmware/efi/efivars ]]; then
+    mount --bind /sys/firmware/efi/efivars "$TARGET/sys/firmware/efi/efivars" || true
+fi
+if [[ "$MODE" == uefi ]]; then
+    chroot "$TARGET" grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=PersisOS --removable
+else
+    chroot "$TARGET" grub-install --target=i386-pc "$DISK"
+fi
+chroot "$TARGET" update-grub
+echo
+echo 'Installation complete. You can reboot and remove the installation media.'
+read -r -p 'Press Enter to finish.' _

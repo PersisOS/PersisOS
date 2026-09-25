@@ -10,7 +10,7 @@ PersisOS is a Debian 13-based operating system available as a polished KDE
 Plasma desktop and a headless server edition. The desktop ships with a focused
 set of everyday applications and a branded Plasma experience. The server image
 provides administration, diagnostics, storage, networking, security, container,
-and virtualization tools, with a minimal graphical stack for its installer.
+and virtualization tools, with a guided command-line installer.
 
 ## Design goals
 
