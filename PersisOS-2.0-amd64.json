@@ -119,7 +119,8 @@
     "curl",
     "wget",
     "plasma-systemmonitor",
-    "squashfs-tools"
+    "squashfs-tools",
+    "rsync"
   ],
   "exclude_packages": [
     "plasma-welcome",
