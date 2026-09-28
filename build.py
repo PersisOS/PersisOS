@@ -51,6 +51,10 @@ GRUB_EFI_BINARY = {
     "armhf": "bootarm.efi",
 }
 
+GRUB_EFI_COMPAT = {
+    "amd64": ("i386-efi", "bootia32.efi"),
+}
+
 LIVE_PACKAGES = [
     "live-boot",
     "live-config",
@@ -554,7 +558,7 @@ class LiveBuilder:
             if self.arch in GRUB_EFI_PACKAGES:
                 pkgs.append(GRUB_EFI_PACKAGES[self.arch])
             if self.arch == "amd64":
-                pkgs += ["grub-pc-bin", "grub2-common"]
+                pkgs += ["grub-efi-ia32-bin", "grub-pc-bin", "grub2-common"]
 
             env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
             try:
@@ -901,12 +905,27 @@ menuentry "{distro} {version} (live, debug)" {{
         removable.mkdir(parents=True, exist_ok=True)
         shutil.copy2(binary, removable / binary_name)
 
+        compatible_binary = None
+        if self.arch in GRUB_EFI_COMPAT:
+            compatible_format, compatible_name = GRUB_EFI_COMPAT[self.arch]
+            compatible_binary = grub_dir / compatible_name
+            self._make_grub_image(
+                compatible_format, compatible_binary, early_config, GRUB_EFI_MODULES
+            )
+            shutil.copy2(compatible_binary, removable / compatible_name)
+
         esp = grub_dir / "efi.img"
         with esp.open("wb") as image:
             image.truncate(16 * 1024 * 1024)
         run(["mkfs.vfat", "-F", "16", "-n", "GRUB_EFI", str(esp)])
         run(["mmd", "-i", str(esp), "::/EFI", "::/EFI/BOOT"])
         run(["mcopy", "-i", str(esp), str(binary), f"::/EFI/BOOT/{binary_name}"])
+        if compatible_binary is not None:
+            compatible_name = GRUB_EFI_COMPAT[self.arch][1]
+            run([
+                "mcopy", "-i", str(esp), str(compatible_binary),
+                f"::/EFI/BOOT/{compatible_name}",
+            ])
         # Only start a second El Torito entry when a BIOS entry precedes it.
         arguments = ["-eltorito-alt-boot"] if self.arch == "amd64" else []
         return arguments + [

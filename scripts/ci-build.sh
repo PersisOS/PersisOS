@@ -6,7 +6,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update
 case "$(dpkg --print-architecture)" in
     amd64)
-        grub_packages=(grub-pc-bin grub-efi-amd64-bin qemu-system-x86 ovmf)
+        grub_packages=(grub-pc-bin grub-efi-amd64-bin grub-efi-ia32-bin qemu-system-x86 ovmf)
         export RUN_BOOT_SMOKE=1 REQUIRE_UEFI_SMOKE=1
         ;;
     arm64) grub_packages=(grub-efi-arm64-bin) ;;

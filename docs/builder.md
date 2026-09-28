@@ -33,7 +33,7 @@ On a Debian amd64 host, install:
 
 ```sh
 sudo apt-get install debootstrap debian-archive-keyring ca-certificates \
-  squashfs-tools grub2-common grub-pc-bin grub-efi-amd64-bin \
+  squashfs-tools grub2-common grub-pc-bin grub-efi-amd64-bin grub-efi-ia32-bin \
   xorriso mtools dosfstools python3
 ```
 

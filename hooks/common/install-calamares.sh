@@ -2,6 +2,7 @@
 set -eu
 echo 'Installing Calamares config and branding'
 cp -a /.temp_assets/calamares/. /etc/calamares/
+install -Dm0755 /.temp_assets/calamares/helpers/persisos-grub-install /usr/local/sbin/persisos-grub-install
 if [ -d /.temp_assets/server ]; then
     cp -a /.temp_assets/server/. /
     chown root:root /usr/local/bin/install-persisos /etc/sudoers.d/90-persisos-installer

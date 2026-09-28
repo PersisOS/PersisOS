@@ -21,6 +21,7 @@ Rectangle {
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             text: qsTr("Installing system, please wait...")
+            font.family: "Noto Sans"
             font.pixelSize: 18
             font.weight: Font.DemiBold
             opacity: 0.85

@@ -69,9 +69,10 @@
     "plasma-discover",
     "plasma-discover-backend-flatpak",
     "flatpak",
+    "ca-certificates",
+    "systemd-timesyncd",
     "fonts-vazirmatn",
     "fonts-noto-core",
-    "fonts-inter",
     "fonts-freefont-ttf",
     "libreoffice-writer",
     "libreoffice-calc",
@@ -94,6 +95,8 @@
     "gdisk",
     "dosfstools",
     "e2fsprogs",
+    "btrfs-progs",
+    "xfsprogs",
     "ntfs-3g",
     "cryptsetup",
     "os-prober",
@@ -127,6 +130,7 @@
     "hooks/desktop/stage-assets.sh"
   ],
   "post_install_scripts": [
+    "hooks/common/update-ca-certificates.sh",
     "hooks/desktop/automatic-updates.sh",
     "hooks/desktop/firewall.sh",
     "hooks/desktop/sysctl.sh",
@@ -162,6 +166,7 @@
     "enable": [
       "sddm",
       "NetworkManager",
+      "systemd-timesyncd",
       "bluetooth",
       "power-profiles-daemon",
       "fstrim.timer",

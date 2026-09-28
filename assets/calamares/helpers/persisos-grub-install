@@ -1,0 +1,27 @@
+#!/bin/sh
+set -u
+
+grub_install=/usr/sbin/grub-install
+is_efi=false
+for argument in "$@"; do
+    case "$argument" in
+        --target=*-efi) is_efi=true ;;
+    esac
+done
+
+if [ "$is_efi" != true ]; then
+    exec "$grub_install" "$@"
+fi
+
+output=$(mktemp)
+trap 'rm -f "$output"' EXIT HUP INT TERM
+set +e
+"$grub_install" "$@" >"$output" 2>&1
+status=$?
+cat "$output"
+if [ "$status" -eq 0 ]; then
+    exit 0
+fi
+
+printf '%s\n' 'EFI GRUB installation failed; retrying without NVRAM registration.' >&2
+"$grub_install" "$@" --no-nvram

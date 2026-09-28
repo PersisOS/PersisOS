@@ -118,6 +118,7 @@
     "hooks/server/stage-assets.sh"
   ],
   "post_install_scripts": [
+    "hooks/common/update-ca-certificates.sh",
     "hooks/server/automatic-updates.sh",
     "hooks/server/firewall.sh",
     "hooks/server/sysctl.sh",

@@ -9,7 +9,7 @@ cat > /etc/fonts/conf.d/99-persisos-default-fonts.conf <<'EOF'
 <fontconfig>
   <alias>
     <family>sans-serif</family>
-    <prefer><family>Inter</family><family>Noto Sans</family></prefer>
+    <prefer><family>Noto Sans</family></prefer>
   </alias>
 </fontconfig>
 EOF

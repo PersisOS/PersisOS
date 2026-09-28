@@ -32,9 +32,10 @@ second hue.
 
 ## Typography
 
-Noto Sans everywhere. Wordmarks use large letter-spacing (4–6) and no bold
-weight. Labels are small (9 pt) with letter-spacing 1 and reduced opacity
-instead of grey colors.
+Noto Sans is the primary font for the Plasma session, SDDM login, boot splash,
+and installer. Noto Sans Mono is used for fixed-width text. Wordmarks use large
+letter-spacing (4–6) and no bold weight. Labels are small (9 pt) with
+letter-spacing 1 and reduced opacity instead of grey colors.
 
 ## Motion
 
