@@ -125,7 +125,10 @@
     "fastfetch",
     "plasma-systemmonitor",
     "squashfs-tools",
-    "rsync"
+    "rsync",
+    "kio-admin",
+    "systemsettings",
+    "kscreen"
   ],
   "exclude_packages": [
     "plasma-welcome",
@@ -156,7 +159,6 @@
   ],
   "boot_append": "quiet splash",
   "squashfs_compression": "xz",
-  "grub_background": "assets/wallpapers/Lake/contents/images/2560x1600.png",
   "os_release": {
     "NAME": "PersisOS",
     "PRETTY_NAME": "PersisOS 2.0 (trixie) AMD64",
@@ -186,5 +188,8 @@
       "nftables",
       "cups"
     ]
+  },
+  "grub_menu": {
+    "background": "assets/wallpapers/Lake/contents/images/2560x1600.png"
   }
 }

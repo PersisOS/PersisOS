@@ -255,7 +255,7 @@ def load_config(path: str) -> dict:
             cfg[new] = cfg.pop(old)
     allowed = set(DEFAULTS) | set(REQUIRED_KEYS) | {
         "hostname", "iso_filename", "iso_volume_id", "kernel_package",
-        "apt_sources", "debootstrap_variant", "grub_background",
+        "apt_sources", "debootstrap_variant", "grub_background", "grub_menu",
         "debootstrap_script", "debootstrap_keyring", "os_release",
     }
     unknown = set(cfg) - allowed
@@ -336,6 +336,42 @@ def load_config(path: str) -> dict:
         if not bg_path.is_file() or bg_path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tga"):
             raise BuildError(f"grub_background image does not exist or is unsupported: {bg}")
         cfg["grub_background"] = str(bg_path.resolve())
+    if "grub_menu" in cfg:
+        menu = cfg["grub_menu"]
+        if not isinstance(menu, dict) or set(menu) - {"timeout", "default", "background", "entries"}:
+            raise BuildError("grub_menu supports timeout, default, background and entries")
+        timeout = menu.get("timeout", 5)
+        default = menu.get("default", 0)
+        if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout < 0:
+            raise BuildError("grub_menu.timeout must be a nonnegative integer")
+        if not isinstance(default, int) or isinstance(default, bool) or default < 0:
+            raise BuildError("grub_menu.default must be a nonnegative integer")
+        entries = menu.get("entries")
+        if entries is not None:
+            if not isinstance(entries, list) or not entries:
+                raise BuildError("grub_menu.entries must be a nonempty list when specified")
+            for index, entry in enumerate(entries):
+                if not isinstance(entry, dict) or set(entry) - {"title", "linux", "initrd", "parameters"}:
+                    raise BuildError(f"grub_menu.entries[{index}] supports title, linux, initrd and parameters")
+                if not all(single_line(entry.get(key)) for key in ("title", "linux", "initrd")):
+                    raise BuildError(f"grub_menu.entries[{index}] requires single-line title, linux and initrd")
+                if any(char in entry[key] for key in ("title", "linux", "initrd") for char in '"\\$`;{}'):
+                    raise BuildError(f"grub_menu.entries[{index}] contains unsupported GRUB characters")
+                params = entry.get("parameters", "")
+                if not single_line(params, empty=True) or any(char in params for char in '"\\$`;{}'):
+                    raise BuildError(f"grub_menu.entries[{index}].parameters must be a safe single-line string")
+            if default >= len(entries):
+                raise BuildError("grub_menu.default must select an existing entry")
+        elif default >= 3:
+            raise BuildError("grub_menu.default must select one of the three generated entries")
+        background = menu.get("background")
+        if background is not None:
+            if not isinstance(background, str) or not matches(r"[A-Za-z0-9][A-Za-z0-9_.\-/]*", background) or ".." in Path(background).parts:
+                raise BuildError("grub_menu.background must be a relative path to an image")
+            bg_path = config_path.parent / background
+            if not bg_path.is_file() or bg_path.suffix.lower() not in (".png", ".jpg", ".jpeg", ".tga"):
+                raise BuildError(f"grub_menu background image does not exist or is unsupported: {background}")
+            menu["background"] = str(bg_path.resolve())
     for key in ("debootstrap_keyring", "debootstrap_script"):
         if key in cfg:
             if not isinstance(cfg[key], str) or not (config_path.parent / cfg[key]).is_file():
@@ -787,9 +823,33 @@ class LiveBuilder:
             else:
                 boot_append += " live-config.nocomponents=user-setup"
 
-            grub_cfg = f'''\
-set default=0
-set timeout=5
+            menu = self.cfg.get("grub_menu")
+            if menu and menu.get("entries"):
+                grub_cfg = f'''set default={menu.get('default', 0)}
+set timeout={menu.get('timeout', 5)}
+set gfxpayload=keep
+
+if search --no-floppy --set=root --label "{self.cfg['iso_volume_id']}" ; then
+    echo "Found ISO root by volume label: {self.cfg['iso_volume_id']}"
+elif search --no-floppy --set=root --file /live/filesystem.squashfs ; then
+    echo "Found ISO root by filesystem marker"
+else
+    echo "WARNING: could not locate ISO root; boot may fail"
+fi
+
+'''
+                for entry in menu["entries"]:
+                    params = entry.get("parameters", "")
+                    grub_cfg += (
+                        f'menuentry "{entry["title"]}" {{\n'
+                        f'    linux  {entry["linux"]}' + (f' {params}' if params else '') + '\n'
+                        f'    initrd {entry["initrd"]}\n'
+                        '}\n\n'
+                    )
+            else:
+                grub_cfg = f'''\
+set default={menu.get('default', 0) if menu else 0}
+set timeout={menu.get('timeout', 5) if menu else 5}
 set gfxpayload=keep
 
 # Locate the ISO root — works under Ventoy, direct boot, and QEMU.
@@ -821,7 +881,7 @@ menuentry "{distro} {version} (live, debug)" {{
             # installer hook); no separate installer boot entry is needed.
 
             # Brand the boot menu with the distribution background image.
-            background = self.cfg.get("grub_background")
+            background = (menu.get("background") if menu else None) or self.cfg.get("grub_background")
             if background:
                 try:
                     shutil.copy2(background, self.iso_root / "boot" / "grub" / "background.png")
