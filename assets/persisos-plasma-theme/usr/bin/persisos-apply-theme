@@ -6,7 +6,7 @@ set -eu
 # available to new sessions, while this one-shot helper applies the panel and
 # wallpaper layout to the live user's config.
 config_home=${XDG_CONFIG_HOME:-"$HOME/.config"}
-marker="$config_home/.persisos-theme-applied-v2"
+marker="$config_home/.persisos-theme-applied"
 layout=/usr/share/plasma/layout-templates/org.persisos.desktop.defaultlayout/contents/layout.js
 
 quiet=0
@@ -93,9 +93,27 @@ fi
 # Keep the icon setting explicit even when a user's existing KDE config wins
 # over /etc/xdg defaults.
 if command -v kwriteconfig6 >/dev/null 2>&1; then
-        kwriteconfig6 --file "$config_home/kdeglobals" --group Icons --key Theme breeze
+    kwriteconfig=kwriteconfig6
 elif command -v kwriteconfig5 >/dev/null 2>&1; then
-    kwriteconfig5 --file "$config_home/kdeglobals" --group Icons --key Theme breeze
+    kwriteconfig=kwriteconfig5
+else
+    kwriteconfig=
+fi
+
+if [ -n "$kwriteconfig" ]; then
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group Icons --key Theme breeze
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group General --key font \
+        'Noto Sans,10,-1,5,400,0,0,0,0,0'
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group General --key fixed \
+        'Noto Sans Mono,10,-1,5,400,0,0,0,0,0'
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group General --key small \
+        'Noto Sans,9,-1,5,400,0,0,0,0,0'
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group General --key toolbarFont \
+        'Noto Sans,10,-1,5,400,0,0,0,0,0'
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group General --key menuFont \
+        'Noto Sans,10,-1,5,400,0,0,0,0,0'
+    "$kwriteconfig" --file "$config_home/kdeglobals" --group General --key windowFont \
+        'Noto Sans,10,-1,5,400,0,0,0,0,0'
 fi
 
 if [ "$layout_applied" -eq 1 ]; then

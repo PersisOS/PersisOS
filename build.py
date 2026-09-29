@@ -134,6 +134,8 @@ GRUB_EFI_MODULES = [
     "halt",
 ]
 
+GRUB_BACKGROUND_MODULES = ["png", "gfxterm_background"]
+
 
 # =============================================================================
 # Error Handling
@@ -824,8 +826,29 @@ class LiveBuilder:
                 boot_append += " live-config.nocomponents=user-setup"
 
             menu = self.cfg.get("grub_menu")
+            background = (
+                (menu.get("background") if menu else None)
+                or self.cfg.get("grub_background")
+            )
+            background_config = ""
+            self.grub_background_enabled = False
+            if background:
+                try:
+                    shutil.copy2(background, self.iso_root / "boot" / "grub" / "background.png")
+                    self.grub_background_enabled = True
+                    background_config = (
+                        "set gfxmode=auto\n"
+                        "if terminal_output gfxterm; then\n"
+                        "    set gfxpayload=keep\n"
+                        "else\n"
+                        "    terminal_output console\n"
+                        "fi\n"
+                    )
+                except OSError as exc:
+                    print(f"  Warning: could not install GRUB background: {exc}")
+
             if menu and menu.get("entries"):
-                grub_cfg = f'''set default={menu.get('default', 0)}
+                grub_cfg = background_config + f'''set default={menu.get('default', 0)}
 set timeout={menu.get('timeout', 5)}
 set gfxpayload=keep
 
@@ -847,7 +870,7 @@ fi
                         '}\n\n'
                     )
             else:
-                grub_cfg = f'''\
+                grub_cfg = background_config + f'''\
 set default={menu.get('default', 0) if menu else 0}
 set timeout={menu.get('timeout', 5) if menu else 5}
 set gfxpayload=keep
@@ -881,18 +904,13 @@ menuentry "{distro} {version} (live, debug)" {{
             # installer hook); no separate installer boot entry is needed.
 
             # Brand the boot menu with the distribution background image.
-            background = (menu.get("background") if menu else None) or self.cfg.get("grub_background")
-            if background:
-                try:
-                    shutil.copy2(background, self.iso_root / "boot" / "grub" / "background.png")
-                    grub_cfg += (
-                        "if background_image /boot/grub/background.png ; then\n"
-                        "    set color_normal=white/black\n"
-                        "    set color_highlight=black/light-gray\n"
-                        "fi\n"
-                    )
-                except OSError as exc:
-                    print(f"  Warning: could not install GRUB background: {exc}")
+            if self.grub_background_enabled:
+                grub_cfg += (
+                    "if background_image /boot/grub/background.png ; then\n"
+                    "    set color_normal=white/black\n"
+                    "    set color_highlight=black/light-gray\n"
+                    "fi\n"
+                )
 
             (self.iso_root / "boot" / "grub" / "grub.cfg").write_text(grub_cfg)
             (self.iso_root / ".disk" / "info").write_text(
@@ -923,7 +941,10 @@ menuentry "{distro} {version} (live, debug)" {{
         for pattern in ("*.mod", "*.lst"):
             for source in library.glob(pattern):
                 shutil.copy2(source, destination / source.name)
-        modules = available_grub_modules(library, requested_modules)
+        modules_to_embed = list(requested_modules)
+        if getattr(self, "grub_background_enabled", False):
+            modules_to_embed.extend(GRUB_BACKGROUND_MODULES)
+        modules = available_grub_modules(library, modules_to_embed)
         with tempfile.NamedTemporaryFile(mode="w", suffix=".cfg") as config:
             config.write(early_config)
             config.flush()

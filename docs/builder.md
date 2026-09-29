@@ -86,7 +86,7 @@ Optional values:
 | `squashfs_compression` | `xz`; also zstd, gzip, lzo, lz4 when supported by host tools and target kernel |
 | `iso_volume_id` | Derived label, at most 32 letters/digits/underscores |
 | `iso_filename` | Derived safe `.iso` filename |
-| `grub_menu` | Optional object with `timeout`, `default`, `background`, and/or `entries`; background paths are relative to the manifest, entry kernel/initrd paths are relative to the ISO root, and entries contain `title`, `linux`, `initrd`, and optional `parameters`. Omitting `entries` keeps the generated live, nomodeset, and debug entries |
+| `grub_menu` | Optional object with `timeout`, `default`, `background`, and/or `entries`; background paths are relative to the manifest, entry kernel/initrd paths are relative to the ISO root, and entries contain `title`, `linux`, `initrd`, and optional `parameters`. A configured background enables GRUB's graphical terminal and embeds the required image modules. Omitting `entries` keeps the generated live, nomodeset, and debug entries |
 | `grub_background` | Legacy top-level path to a PNG/JPG/TGA background image, relative to the manifest; prefer `grub_menu.background` |
 
 Legacy `arch` and `debian_distro` aliases remain supported; conflicting aliases
