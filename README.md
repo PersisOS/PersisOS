@@ -74,6 +74,9 @@ sudo python3 build.py PersisOS-Server-2.0-amd64.json \
   --workdir build-server --outdir output-server
 ```
 
+Fastfetch is installed in the desktop and server images. It runs when an
+interactive Bash terminal opens and displays the PersisOS logo.
+
 The server live account is `admin` with password `persisos`. The command-line
 installer starts automatically on the first console when booting live media;
 you can also run `sudo install-persisos` from a local console. SSH is installed

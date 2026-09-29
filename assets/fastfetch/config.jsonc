@@ -1,0 +1,34 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "file",
+    "source": "/usr/share/fastfetch/persisos.txt",
+    "color": {
+      "1": "magenta",
+      "2": "white"
+    },
+    "padding": {
+      "right": 2
+    }
+  },
+  "display": {
+    "color": {
+      "keys": "magenta",
+      "separator": "white"
+    }
+  },
+  "modules": [
+    "title",
+    "separator",
+    "os",
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "terminal",
+    "cpu",
+    "memory",
+    "disk"
+  ]
+}

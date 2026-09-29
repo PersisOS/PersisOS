@@ -122,6 +122,7 @@
     "vlc",
     "curl",
     "wget",
+    "fastfetch",
     "plasma-systemmonitor",
     "squashfs-tools",
     "rsync"
@@ -148,6 +149,7 @@
     "hooks/desktop/live-autologin.sh",
     "hooks/desktop/icons-and-launchers.sh",
     "hooks/desktop/flatpak.sh",
+    "hooks/common/install-fastfetch.sh",
     "hooks/common/install-calamares.sh",
     "hooks/desktop/login-branding.sh",
     "hooks/common/cleanup-assets.sh"

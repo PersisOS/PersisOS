@@ -101,6 +101,7 @@
     "slirp4netns",
     "qemu-guest-agent",
     "fonts-inter",
+    "fastfetch",
     "sudo",
     "grub-common",
     "grub-pc-bin",
@@ -126,6 +127,7 @@
     "hooks/server/password-policy.sh",
     "hooks/server/login-branding.sh",
     "hooks/server/install-cli-installer.sh",
+    "hooks/common/install-fastfetch.sh",
     "hooks/common/cleanup-assets.sh"
   ],
   "boot_append": "quiet noautologin",
