@@ -20,8 +20,10 @@ set +e
 status=$?
 cat "$output"
 if [ "$status" -eq 0 ]; then
-    exit 0
+    "$grub_install" "$@" --no-nvram --removable
+    exit $?
 fi
 
 printf '%s\n' 'EFI GRUB installation failed; retrying without NVRAM registration.' >&2
-"$grub_install" "$@" --no-nvram
+"$grub_install" "$@" --no-nvram || exit $?
+"$grub_install" "$@" --no-nvram --removable
