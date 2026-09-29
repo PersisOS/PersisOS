@@ -1,0 +1,21 @@
+[Unit]
+Description=PersisOS Server live installer
+After=systemd-user-sessions.service
+Before=getty@tty1.service
+Conflicts=getty@tty1.service
+ConditionKernelCommandLine=boot=live
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/install-persisos
+StandardInput=tty
+StandardOutput=tty
+StandardError=tty
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+Restart=no
+
+[Install]
+WantedBy=multi-user.target

@@ -74,10 +74,11 @@ sudo python3 build.py PersisOS-Server-2.0-amd64.json \
   --workdir build-server --outdir output-server
 ```
 
-The server live account is `admin` with password `persisos`. Run
-`install-persisos` from a local console with a display attached to start
-Calamares. SSH is installed but intentionally disabled on live media until the
-administrator changes that password and enables the service.
+The server live account is `admin` with password `persisos`. The command-line
+installer starts automatically on the first console when booting live media;
+you can also run `sudo install-persisos` from a local console. SSH is installed
+but intentionally disabled on live media until the administrator changes that
+password and enables the service.
 
 ## Project layout
 

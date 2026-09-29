@@ -74,6 +74,9 @@ rsync -aHAX --numeric-ids --delete \
     --exclude=/tmp/ --exclude=/mnt/ --exclude=/media/ --exclude=/live/ \
     --exclude=/var/tmp/ --exclude=/etc/fstab --exclude=/etc/mtab \
     / "$TARGET/"
+# The live installer is enabled for startup on the image. Keep it from running
+# again when the newly installed system boots.
+rm -f "$TARGET/etc/systemd/system/multi-user.target.wants/persisos-installer.service"
 ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
 if [[ "$MODE" == uefi ]]; then
     EFI_UUID=$(blkid -s UUID -o value "$EFI_PART")
