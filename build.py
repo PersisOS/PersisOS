@@ -836,13 +836,29 @@ class LiveBuilder:
                     shutil.copy2(background, self.iso_root / "boot" / "grub" / "background.png")
                     self.grub_background_enabled = True
                     background_config = (
-                        "set gfxmode=auto\n"
-                        "if terminal_output gfxterm; then\n"
-                        "    set gfxpayload=keep\n"
+                        "if loadfont /boot/grub/unicode.pf2; then\n"
+                        "    set gfxmode=1024x768,auto\n"
+                        "    if terminal_output gfxterm; then\n"
+                        "        set gfxpayload=keep\n"
+                        "    else\n"
+                        "        terminal_output console\n"
+                        "    fi\n"
                         "else\n"
                         "    terminal_output console\n"
                         "fi\n"
                     )
+                    font_candidates = (
+                        self.chroot / "usr/share/grub/unicode.pf2",
+                        Path("/usr/share/grub/unicode.pf2"),
+                        Path("/usr/share/grub2/unicode.pf2"),
+                    )
+                    font = next(
+                        (candidate for candidate in font_candidates if candidate.is_file()),
+                        None,
+                    )
+                    if font is None:
+                        raise BuildError("GRUB graphical menu requested, but unicode.pf2 was not found")
+                    shutil.copy2(font, self.iso_root / "boot" / "grub" / "unicode.pf2")
                 except OSError as exc:
                     print(f"  Warning: could not install GRUB background: {exc}")
 
@@ -942,7 +958,7 @@ menuentry "{distro} {version} (live, debug)" {{
                 shutil.copy2(source, destination / source.name)
         modules_to_embed = list(requested_modules)
         if getattr(self, "grub_background_enabled", False):
-            modules_to_embed.extend(GRUB_BACKGROUND_MODULES)
+            modules_to_embed.extend(["font", *GRUB_BACKGROUND_MODULES])
         modules = available_grub_modules(library, modules_to_embed)
         with tempfile.NamedTemporaryFile(mode="w", suffix=".cfg") as config:
             config.write(early_config)

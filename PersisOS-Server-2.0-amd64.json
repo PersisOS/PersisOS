@@ -157,7 +157,8 @@
       "unattended-upgrades",
       "fstrim.timer",
       "smartmontools",
-      "qemu-guest-agent"
+      "qemu-guest-agent",
+      "fdisk"
     ],
     "disable": [
       "ssh"
