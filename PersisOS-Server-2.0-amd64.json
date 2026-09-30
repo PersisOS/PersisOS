@@ -111,7 +111,8 @@
     "e2fsprogs",
     "ntfs-3g",
     "os-prober",
-    "efibootmgr"
+    "efibootmgr",
+    "fdisk"
   ],
   "exclude_packages": [],
   "pre_chroot_scripts": [
@@ -157,8 +158,7 @@
       "unattended-upgrades",
       "fstrim.timer",
       "smartmontools",
-      "qemu-guest-agent",
-      "fdisk"
+      "qemu-guest-agent"
     ],
     "disable": [
       "ssh"
