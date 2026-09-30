@@ -112,7 +112,9 @@ Prefer `services` and `os_release` settings for common configuration. Use hooks
 for distribution-specific files and applications. Chroot services are prevented
 from starting during package installation. Initramfs images are regenerated after
 hooks, so installed configuration is included. The selected kernel is exported
-with its matching initramfs. Package recommendations are disabled by default.
+with its matching initramfs for live boot. The SquashFS also retains `/boot` so
+an installer that copies the live root filesystem has the kernel and initramfs
+available in the installed system. Package recommendations are disabled by default.
 
 ## Workspaces, output and failures
 

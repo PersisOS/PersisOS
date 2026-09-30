@@ -1,4 +1,3 @@
-```
 # Compiled and build artifacts
 *.o
 *.obj
@@ -12,7 +11,9 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+build-*/
 output/
+output-*/
 target/
 .gradle/
 
@@ -63,4 +64,5 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
-```
+*.iso
+*.iso.sha256

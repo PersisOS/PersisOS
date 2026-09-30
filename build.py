@@ -597,6 +597,7 @@ class LiveBuilder:
                 pkgs.append(GRUB_EFI_PACKAGES[self.arch])
             if self.arch == "amd64":
                 pkgs += ["grub-efi-ia32-bin", "grub-pc-bin", "grub2-common"]
+            pkgs = list(dict.fromkeys(pkgs))
 
             env = {**os.environ, "DEBIAN_FRONTEND": "noninteractive"}
             try:
@@ -803,8 +804,6 @@ class LiveBuilder:
                     "-comp",
                     self.cfg["squashfs_compression"],
                     "-noappend",
-                    "-e",
-                    "boot",
                 ]
             )
 
