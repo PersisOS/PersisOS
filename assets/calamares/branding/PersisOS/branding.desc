@@ -4,7 +4,7 @@ componentName: PersisOS
 strings:
     productName:         "PersisOS GNU/Linux"
     productVersion:      "2.0"
-    productUrl:          "persisos.arshavirm.com"
+    productUrl:          "https://github.com/PersisOS/PersisOS"
     supportUrl:          "https://github.com/PersisOS/PersisOS/issues"
     knownIssuesUrl:      "https://github.com/PersisOS/PersisOS/issues"
     releaseNotesUrl:     "https://github.com/PersisOS/PersisOS/releases"
@@ -27,4 +27,4 @@ style:
     SidebarBackground: "#201b29"
     SidebarText: "#e5deed"
     SidebarTextCurrent: "#ffffff"
-    SidebarBackgroundCurrent: "#8247bd"
+    SidebarBackgroundCurrent: "#9738ba"

@@ -1,8 +1,7 @@
 #!/bin/bash
 set -e
-# Autologin straight into the live desktop session. Calamares removes this
-# live-only override from the installed target after configuring its SDDM
-# settings, so it cannot override the installer's autologin choice.
+# Autologin straight into the live desktop session. The Calamares cleanup job
+# removes this live-only override from the installed target after setup.
 live_user=$(getent passwd user | cut -d: -f1)
 if [ -z "$live_user" ]; then
     echo 'No live user found; skipping SDDM autologin'

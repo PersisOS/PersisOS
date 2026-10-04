@@ -2,7 +2,6 @@
 # PersisOS
 
 [![Build](https://github.com/PersisOS/PersisOS/actions/workflows/build.yml/badge.svg)](https://github.com/PersisOS/PersisOS/actions/workflows/build.yml)
-[![Build PersisOS Server](https://github.com/PersisOS/PersisOS/actions/workflows/server-build.yml/badge.svg)](https://github.com/PersisOS/PersisOS/actions/workflows/server-build.yml)
 ![Debian](https://img.shields.io/badge/base-Debian%2013-A81D33?logo=debian&logoColor=white)
 ![Architectures](https://img.shields.io/badge/architectures-amd64%20%7C%20arm64-4B6CB7)
 
@@ -77,9 +76,12 @@ sudo python3 build.py PersisOS-Server-2.0-amd64.json \
 Fastfetch is installed in the desktop and server images. It runs when an
 interactive Bash terminal opens and displays the PersisOS logo.
 
-The server live account is `admin` with password `persisos`. The command-line
+The server live account is `admin` with password `persisos`. The text-interface
 installer starts automatically on the first console when booting live media;
-you can also run `sudo install-persisos` from a local console. SSH is installed
+it lists unused disks with capacity and model, asks for an installed hostname,
+time zone, and new admin password, and requires explicit confirmation before
+erasing the selected disk. It configures the installed system and bootloader.
+You can also run `sudo install-persisos` from a local console. SSH is installed
 but intentionally disabled on live media until the administrator changes that
 password and enables the service.
 

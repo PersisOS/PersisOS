@@ -2,13 +2,13 @@ import QtQuick 2.15
 
 Rectangle {
     id: root
-    color: "#15121b"
+    color: "#141317"
     opacity: 1
 
     property int stage
     readonly property int totalStages: 6
-    readonly property color accent: "#b773d4"
-    readonly property color foreground: "#f7f3fa"
+    readonly property color accent: "#b25ae8"
+    readonly property color foreground: "#f4eff8"
 
     onStageChanged: {
         if (stage === 1)
@@ -23,7 +23,7 @@ Rectangle {
         width: Math.min(parent.width * 0.56, 560)
         height: width
         radius: width / 2
-        color: "#8739a5"
+            color: "#9738ba"
         opacity: 0.08
         scale: 0.88
 
@@ -75,7 +75,7 @@ Rectangle {
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             text: "Preparing your desktop"
-            color: "#c8bfce"
+            color: "#c2bbcc"
             font.family: "Noto Sans"
             font.pointSize: 11
         }

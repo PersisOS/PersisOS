@@ -18,13 +18,13 @@ render it as-is.
 | Token | Hex | Used for |
 |---|---|---|
 | `bg` | `#141317` | Splash and greeter background |
-| `surface` | `#1b171f` | Frosted card / panels |
-| `field` | `#241e2b` | Input fields |
+| `surface` | `#1b171f` | Greeter card, window surfaces, splash |
+| `field` | `#241e2b` | Input fields and buttons |
 | `field-border` | `#3a3142` | Unfocused field border |
 | `brand` | `#9738ba` | Logo color, selection highlight, titlebar blend |
 | `glow` | `#b25ae8` | Focus ring, progress line, hover accents |
 | `ink` | `#f4eff8` | Primary text |
-| dim text | `ink` at 45–55% opacity | Labels, hints, footer branding |
+| `muted` | `#c2bbcc` | Secondary labels and hints |
 
 Rules of thumb: purple is the only saturated color on themed screens; white
 appears only as low-opacity structure (dividers, track lines); never use a
@@ -75,4 +75,3 @@ updates.
   missing.
 - Test any QML change by booting the live ISO in a VM: splash, login
   (wrong password included), and a normal session login.
-- Update the mockup `docs/theme-mockup.svg` when a screen's layout changes.

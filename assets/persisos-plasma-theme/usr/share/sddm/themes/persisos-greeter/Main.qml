@@ -6,9 +6,9 @@ Item {
     width: 1600
     height: 900
 
-    readonly property color ink: "#f7f4fb"
+    readonly property color ink: "#f4eff8"
     readonly property color muted: "#c2bbcc"
-    readonly property color accent: "#bd73df"
+    readonly property color accent: "#b25ae8"
     property string message: ""
     property real welcomeIntroOffset: 24
 
@@ -22,15 +22,15 @@ Item {
     Rectangle {
         anchors.fill: parent
         gradient: Gradient {
-            GradientStop { position: 0.0; color: "#10101730" }
-            GradientStop { position: 0.48; color: "#10101788" }
-            GradientStop { position: 1.0; color: "#101017e8" }
+            GradientStop { position: 0.0; color: "#14131730" }
+            GradientStop { position: 0.48; color: "#14131788" }
+            GradientStop { position: 1.0; color: "#141317e8" }
         }
     }
 
     Rectangle {
         anchors.fill: parent
-        color: "#111018"
+        color: "#141317"
         opacity: 0.16
     }
 
@@ -100,7 +100,7 @@ Item {
         anchors.rightMargin: Math.max(48, root.width * 0.12)
         anchors.verticalCenter: parent.verticalCenter
         radius: 22
-        color: "#201d28"
+        color: "#1b171f"
         border.width: 1
         border.color: "#ffffff20"
         opacity: 0
@@ -139,8 +139,8 @@ Item {
                 leftPadding: 14
                 background: Rectangle {
                     radius: 10
-                    color: "#302b39"
-                    border.color: username.activeFocus ? root.accent : "#ffffff20"
+                    color: "#241e2b"
+                    border.color: username.activeFocus ? root.accent : "#3a3142"
                 }
                 onAccepted: password.forceActiveFocus()
             }
@@ -157,8 +157,8 @@ Item {
                 leftPadding: 14
                 background: Rectangle {
                     radius: 10
-                    color: "#302b39"
-                    border.color: password.activeFocus ? root.accent : "#ffffff20"
+                    color: "#241e2b"
+                    border.color: password.activeFocus ? root.accent : "#3a3142"
                 }
                 onAccepted: root.login()
             }
@@ -182,8 +182,8 @@ Item {
                 }
                 background: Rectangle {
                     radius: 10
-                    color: "#302b39"
-                    border.color: session.activeFocus ? root.accent : "#ffffff20"
+                    color: "#241e2b"
+                    border.color: session.activeFocus ? root.accent : "#3a3142"
                 }
             }
 
@@ -213,7 +213,7 @@ Item {
                 }
                 background: Rectangle {
                     radius: 10
-                    color: parent.down ? "#8d4daf" : "#a65dc9"
+                    color: parent.down ? "#9738ba" : root.accent
                     Behavior on color { ColorAnimation { duration: 140 } }
                 }
                 onClicked: root.login()

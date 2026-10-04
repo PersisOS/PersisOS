@@ -22,7 +22,7 @@ panel.height = 2 * Math.floor(gridUnit * 2.5 / 2)
 
 var appmenu = panel.addWidget('org.kde.plasma.kickoff')
 appmenu.currentConfigGroup = ['General']
-appmenu.writeConfig('icon', 'persisos-launcher')
+appmenu.writeConfig('icon', 'persisos')
 
 var icontasks = panel.addWidget('org.kde.plasma.icontasks')
 icontasks.currentConfigGroup = ['General']

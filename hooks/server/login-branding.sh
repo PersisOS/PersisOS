@@ -14,6 +14,6 @@ SSH is installed but disabled on live media. After changing the password, run:
 
 Use nmcli for network configuration and nft for firewall management.
 
-To install PersisOS, connect a display and run:
+To install PersisOS, use a local console and run:
   install-persisos
 EOF
