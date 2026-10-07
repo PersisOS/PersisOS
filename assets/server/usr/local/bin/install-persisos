@@ -1,6 +1,29 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+# newt (used by whiptail) reads this palette for every dialog. Use the
+# 256-color palette so the background is visibly purple on a local console.
+export NEWT_COLORS='root=white,magenta
+window=white,magenta
+border=white,magenta
+title=white,magenta
+textbox=white,magenta
+button=magenta,white
+compactbutton=magenta,white
+listbox=white,magenta
+actlistbox=white,blue
+actsellistbox=white,blue
+label=white,magenta
+checkbox=white,magenta
+actcheckbox=magenta,white
+entry=white,blue
+disentry=gray,magenta
+helpline=white,magenta
+roottext=white,magenta
+emptyscale=white,magenta
+fullscale=white,blue
+ منف=white,magenta'
+
 TARGET=/mnt/persisos-install
 LOG=$(mktemp /tmp/persisos-installer.XXXXXX)
 DISK=
@@ -9,12 +32,15 @@ PASSWORD_AGAIN=
 KEEP_LOG=0
 
 cleanup() {
+    # Unmount in reverse order. --recursive on each nested path can unmount
+    # later entries unexpectedly, so let the explicit order do the work.
     for path in "$TARGET/run" "$TARGET/sys/firmware/efi/efivars" \
-        "$TARGET/sys" "$TARGET/proc" "$TARGET/dev/pts" "$TARGET/dev"; do
-        mountpoint -q "$path" && umount -R "$path" || true
+        "$TARGET/sys" "$TARGET/proc" "$TARGET/dev/pts" "$TARGET/dev" \
+        "$TARGET/boot/efi" "$TARGET"; do
+        if mountpoint -q "$path"; then
+            umount "$path" >>"$LOG" 2>&1 || umount -l "$path" >>"$LOG" 2>&1 || true
+        fi
     done
-    mountpoint -q "$TARGET/boot/efi" && umount "$TARGET/boot/efi" || true
-    mountpoint -q "$TARGET" && umount "$TARGET" || true
     rmdir "$TARGET" 2>/dev/null || true
     [[ $KEEP_LOG == 1 ]] || rm -f "$LOG"
     unset PASSWORD PASSWORD_AGAIN
@@ -28,9 +54,21 @@ fail() {
     exit 1
 }
 
+on_error() {
+    local status=$?
+    KEEP_LOG=1
+    printf 'Unexpected error (exit %s) at line %s: %s\n' \
+        "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" >>"$LOG"
+    whiptail --title 'Installation stopped' --scrolltext --msgbox \
+        "An unexpected installation error occurred (exit $status).\n\nDetails: $LOG" 12 76 || true
+    exit "$status"
+}
+trap on_error ERR
+
 [[ $EUID -eq 0 ]] || { echo 'Run this installer with sudo.' >&2; exit 1; }
 for command in whiptail lsblk sfdisk partprobe udevadm mkfs.ext4 mkfs.fat \
-    rsync mount umount mountpoint chroot grub-install update-grub blkid swapon; do
+    rsync mount umount mountpoint chroot grub-install update-grub blkid swapon \
+    awk grep sed sleep; do
     command -v "$command" >/dev/null || { echo "Required command missing: $command" >&2; exit 1; }
 done
 if [[ ! -t 0 || ! -t 1 ]]; then
@@ -72,6 +110,12 @@ DISK=$(whiptail --title 'Select installation disk' --menu \
 if lsblk -nrpo MOUNTPOINT "$DISK" | awk 'NF {found=1} END {exit !found}'; then
     fail 'A filesystem on the selected disk is mounted. No changes were made.'
 fi
+while IFS= read -r swap_device; do
+    [[ -b $swap_device ]] || continue
+    if lsblk -sno NAME "$swap_device" | grep -Fxq "${DISK#/dev/}"; then
+        fail 'The selected disk contains active swap. Disable that swap and restart the installer.'
+    fi
+done < <(swapon --show=NAME --noheadings)
 
 HOSTNAME=$(whiptail --title 'System identity' --inputbox \
     'Enter the hostname for the installed server:' 10 72 'persisos-server' \
@@ -155,7 +199,9 @@ if [[ $MODE == uefi ]]; then
 else
     printf 'UUID=%s / ext4 errors=remount-ro 0 1\n' "$ROOT_UUID" >"$TARGET/etc/fstab"
 fi
-printf '%s\n' "$PASSWORD" | chroot "$TARGET" chpasswd >>"$LOG" 2>&1 || fail 'Could not set the administrator password.'
+# The live installer runs as root and the only account created by the image is
+# admin. chpasswd requires an account:password record, not a bare password.
+printf 'admin:%s\n' "$PASSWORD" | chroot "$TARGET" chpasswd >>"$LOG" 2>&1 || fail 'Could not set the admin account password.'
 unset PASSWORD PASSWORD_AGAIN
 rm -f "$TARGET/etc/machine-id" "$TARGET/var/lib/dbus/machine-id"
 : >"$TARGET/etc/machine-id"
