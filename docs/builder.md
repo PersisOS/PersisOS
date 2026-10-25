@@ -56,7 +56,7 @@ Required values:
 | Key | Meaning |
 | --- | --- |
 | `distro_name`, `version` | Display name and release version, both strings |
-| `suite` | Upstream debootstrap release, such as `trixie` or `noble` |
+| `suite` | Upstream debootstrap release, such as `forky` or `noble` |
 | `apt_mirror` | Bootstrap mirror URL |
 | `packages` | Additional package names; may be empty |
 

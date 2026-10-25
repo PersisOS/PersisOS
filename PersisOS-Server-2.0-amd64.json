@@ -2,7 +2,7 @@
   "distro_name": "PersisOS-Server",
   "version": "2.0",
   "architecture": "amd64",
-  "suite": "trixie",
+  "suite": "forky",
   "debootstrap_variant": "minbase",
   "apt_mirror": "http://deb.debian.org/debian",
   "apt_components": [
@@ -12,9 +12,8 @@
     "non-free-firmware"
   ],
   "apt_sources": [
-    "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware",
-    "deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware",
-    "deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
+    "deb http://deb.debian.org/debian forky main contrib non-free non-free-firmware",
+    "deb http://security.debian.org/debian-security forky-security main contrib non-free non-free-firmware"
   ],
   "hostname": "persisos-server",
   "locale": "en_US.UTF-8",
@@ -134,7 +133,7 @@
   "squashfs_compression": "xz",
   "os_release": {
     "NAME": "PersisOS Server",
-    "PRETTY_NAME": "PersisOS Server 2.0 (trixie)",
+    "PRETTY_NAME": "PersisOS Server 2.0 (Forky) AMD64",
     "ID": "persisos-server",
     "ID_LIKE": "debian",
     "VERSION": "2.0",

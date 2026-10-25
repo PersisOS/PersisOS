@@ -26,7 +26,7 @@ appmenu.writeConfig('icon', 'persisos')
 
 var icontasks = panel.addWidget('org.kde.plasma.icontasks')
 icontasks.currentConfigGroup = ['General']
-icontasks.writeConfig('launchers', [])
+icontasks.writeConfig('launchers', ['applications:org.kde.discover.desktop'])
 panel.addWidget('org.kde.plasma.panelspacer')
 panel.addWidget('org.kde.plasma.systemtray')
 panel.addWidget('org.kde.plasma.digitalclock')

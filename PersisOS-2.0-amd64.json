@@ -2,7 +2,7 @@
   "distro_name": "PersisOS",
   "version": "2.0",
   "architecture": "amd64",
-  "suite": "trixie",
+  "suite": "forky",
   "debootstrap_variant": "minbase",
   "apt_mirror": "http://deb.debian.org/debian",
   "apt_components": [
@@ -12,9 +12,8 @@
     "non-free-firmware"
   ],
   "apt_sources": [
-    "deb http://deb.debian.org/debian trixie main contrib non-free non-free-firmware",
-    "deb http://deb.debian.org/debian trixie-updates main contrib non-free non-free-firmware",
-    "deb http://security.debian.org/debian-security trixie-security main contrib non-free non-free-firmware"
+    "deb http://deb.debian.org/debian forky main contrib non-free non-free-firmware",
+    "deb http://security.debian.org/debian-security forky-security main contrib non-free non-free-firmware"
   ],
   "hostname": "persisos",
   "locale": "en_US.UTF-8",
@@ -42,7 +41,6 @@
     "libvulkan1",
     "vulkan-tools",
     "va-driver-all",
-    "vdpau-driver-all",
     "kde-plasma-desktop",
     "kwin-x11",
     "kwin-wayland",
@@ -52,6 +50,7 @@
     "bluez",
     "udisks2",
     "xdg-user-dirs",
+    "xdg-utils",
     "kio-extras",
     "breeze",
     "breeze-gtk-theme",
@@ -65,6 +64,7 @@
     "pipewire-audio",
     "wireplumber",
     "gstreamer1.0-pipewire",
+    "gstreamer1.0-libav",
     "libspa-0.2-bluetooth",
     "dolphin",
     "kate",
@@ -74,7 +74,7 @@
     "ark",
     "ffmpegthumbs",
     "unrar",
-    "p7zip-full",
+    "7zip",
     "zip",
     "unzip",
     "kde-spectacle",
@@ -82,8 +82,10 @@
     "partitionmanager",
     "firefox-esr",
     "plasma-discover",
+    "packagekit",
     "plasma-discover-backend-flatpak",
     "flatpak",
+    "fuse3",
     "ca-certificates",
     "systemd-timesyncd",
     "fonts-vazirmatn",
@@ -104,8 +106,6 @@
     "print-manager",
     "fwupd",
     "calamares",
-    "pkexec",
-    "polkit-kde-agent-1",
     "pkexec",
     "polkit-kde-agent-1",
     "qml6-module-org-kde-kirigami",
@@ -142,7 +142,10 @@
     "rsync",
     "kio-admin",
     "systemsettings",
-    "kscreen"
+    "kscreen",
+    "xdg-desktop-portal",
+    "xdg-desktop-portal-kde",
+    "xdg-desktop-portal-gtk"
   ],
   "exclude_packages": [
     "plasma-welcome",
@@ -175,7 +178,7 @@
   "squashfs_compression": "xz",
   "os_release": {
     "NAME": "PersisOS",
-    "PRETTY_NAME": "PersisOS 2.0 (trixie) AMD64",
+    "PRETTY_NAME": "PersisOS 2.0 (Forky) AMD64",
     "ID": "persisos",
     "ID_LIKE": "debian",
     "VERSION": "2.0",

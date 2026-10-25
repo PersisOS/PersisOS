@@ -19,6 +19,9 @@ jobs:
           - config: PersisOS-Server-2.0-amd64.json
             runner: ubuntu-latest
             artifact: persisos-server-amd64
+          - config: PersisOS-Server-2.0-arm64.json
+            runner: ubuntu-24.04-arm
+            artifact: persisos-server-arm64
     uses: ./.github/workflows/image.yml
     with:
       config: ${{ matrix.config }}

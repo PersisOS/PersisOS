@@ -3,4 +3,6 @@ inode/directory=org.kde.dolphin.desktop
 text/html=firefox-esr.desktop
 x-scheme-handler/http=firefox-esr.desktop
 x-scheme-handler/https=firefox-esr.desktop
-
+application/vnd.flatpak.ref=org.kde.discover.desktop
+application/vnd.flatpak.repo=org.kde.discover.desktop
+application/vnd.flatpak=org.kde.discover.desktop

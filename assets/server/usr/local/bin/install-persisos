@@ -21,8 +21,7 @@ disentry=gray,magenta
 helpline=white,magenta
 roottext=white,magenta
 emptyscale=white,magenta
-fullscale=white,blue
- منف=white,magenta'
+fullscale=white,blue'
 
 TARGET=/mnt/persisos-install
 LOG=$(mktemp /tmp/persisos-installer.XXXXXX)
@@ -68,7 +67,7 @@ trap on_error ERR
 [[ $EUID -eq 0 ]] || { echo 'Run this installer with sudo.' >&2; exit 1; }
 for command in whiptail lsblk sfdisk partprobe udevadm mkfs.ext4 mkfs.fat \
     rsync mount umount mountpoint chroot grub-install update-grub blkid swapon \
-    awk grep sed sleep; do
+    awk grep sed sleep dpkg; do
     command -v "$command" >/dev/null || { echo "Required command missing: $command" >&2; exit 1; }
 done
 if [[ ! -t 0 || ! -t 1 ]]; then
@@ -137,7 +136,22 @@ PASSWORD_AGAIN=$(whiptail --title 'Confirm password' --passwordbox \
     'Enter the administrator password again:' 10 72 3>&1 1>&2 2>&3) || exit 0
 [[ $PASSWORD == "$PASSWORD_AGAIN" ]] || fail 'The passwords did not match.'
 
-if [[ -d /sys/firmware/efi ]]; then MODE=uefi; else MODE=bios; fi
+HOST_ARCH=$(dpkg --print-architecture)
+if [[ -d /sys/firmware/efi ]]; then
+    MODE=uefi
+else
+    MODE=bios
+fi
+case $HOST_ARCH in
+    amd64)
+        if [[ $MODE == uefi ]]; then GRUB_TARGET=x86_64-efi; else GRUB_TARGET=i386-pc; fi
+        ;;
+    arm64)
+        [[ $MODE == uefi ]] || fail 'ARM64 installation requires booting the installer in UEFI mode.'
+        GRUB_TARGET=arm64-efi
+        ;;
+    *) fail "Unsupported installer architecture: $HOST_ARCH" ;;
+esac
 DETAILS=$(lsblk -dnpo NAME,SIZE,MODEL "$DISK" | sed 's/[[:space:]]\+/  /g')
 whiptail --title 'Confirm disk erase' --defaultno --yesno \
     "Install hostname: $HOSTNAME\nTime zone: $TIMEZONE\nBoot mode: $MODE\n\nThe ENTIRE disk will be erased:\n$DETAILS\n\nContinue only if this is the correct disk." \
@@ -205,6 +219,9 @@ printf 'admin:%s\n' "$PASSWORD" | chroot "$TARGET" chpasswd >>"$LOG" 2>&1 || fai
 unset PASSWORD PASSWORD_AGAIN
 rm -f "$TARGET/etc/machine-id" "$TARGET/var/lib/dbus/machine-id"
 : >"$TARGET/etc/machine-id"
+# Each installed server needs its own SSH identity, rather than the live image's.
+rm -f "$TARGET"/etc/ssh/ssh_host_* "$TARGET/var/lib/systemd/random-seed"
+run_logged chroot "$TARGET" ssh-keygen -A
 
 step 'Mounting system interfaces and installing the bootloader...'
 mkdir -p "$TARGET/dev/pts" "$TARGET/proc" "$TARGET/sys" "$TARGET/run"
@@ -217,8 +234,8 @@ if [[ $MODE == uefi ]]; then
     if mountpoint -q /sys/firmware/efi/efivars; then
         run_logged mount --bind /sys/firmware/efi/efivars "$TARGET/sys/firmware/efi/efivars"
     fi
-    run_logged chroot "$TARGET" grub-install --target=x86_64-efi \
-        --efi-directory=/boot/efi --bootloader-id=PersisOS --removable
+    run_logged chroot "$TARGET" grub-install --target="$GRUB_TARGET" \
+        --efi-directory=/boot/efi --bootloader-id=debian --no-nvram --removable
 else
     run_logged chroot "$TARGET" grub-install --target=i386-pc "$DISK"
 fi
