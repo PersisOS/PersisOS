@@ -90,7 +90,10 @@ The server live account is `admin` with password `persisos`. The text-interface
 installer starts automatically on the first console when booting live media;
 it lists unused disks with capacity and model, asks for an installed hostname,
 time zone, and new admin password, and requires explicit confirmation before
-erasing the selected disk. It configures the installed system and bootloader.
+erasing the selected disk. It configures the installed system and bootloader. During installation, a persistent
+progress screen shows the current stage, elapsed time, and file-copy percentage.
+Overall progress is approximate; detailed output is logged under `/tmp` and the
+log is retained if installation fails.
 You can also run `sudo install-persisos` from a local console. SSH is installed
 but intentionally disabled on live media until the administrator changes that
 password and enables the service.

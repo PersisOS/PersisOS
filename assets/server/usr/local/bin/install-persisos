@@ -29,8 +29,23 @@ DISK=
 PASSWORD=
 PASSWORD_AGAIN=
 KEEP_LOG=0
+PROGRESS_DIR=
+PROGRESS_PID=
+
+# Apply consistent branding to every setup and installation dialog.
+whiptail() { command whiptail --backtitle "PersisOS Server | Guided installation" "$@"; }
+
+stop_progress() {
+    if [[ -n $PROGRESS_PID ]]; then
+        touch "$PROGRESS_DIR/stop"
+        wait "$PROGRESS_PID" || true
+        PROGRESS_PID=
+    fi
+}
 
 cleanup() {
+    stop_progress
+    [[ -z $PROGRESS_DIR ]] || rm -rf "$PROGRESS_DIR"
     # Unmount in reverse order. --recursive on each nested path can unmount
     # later entries unexpectedly, so let the explicit order do the work.
     for path in "$TARGET/run" "$TARGET/sys/firmware/efi/efivars" \
@@ -48,6 +63,7 @@ trap cleanup EXIT
 
 fail() {
     KEEP_LOG=1
+    stop_progress
     whiptail --title 'Installation stopped' --scrolltext --msgbox \
         "$1\n\nDetails: $LOG" 12 76 || true
     exit 1
@@ -56,6 +72,7 @@ fail() {
 on_error() {
     local status=$?
     KEEP_LOG=1
+    stop_progress
     printf 'Unexpected error (exit %s) at line %s: %s\n' \
         "$status" "${BASH_LINENO[0]:-unknown}" "${BASH_COMMAND:-unknown}" >>"$LOG"
     whiptail --title 'Installation stopped' --scrolltext --msgbox \
@@ -63,12 +80,13 @@ on_error() {
     exit "$status"
 }
 trap on_error ERR
+trap 'fail "Installation was interrupted. The target system may be incomplete."' INT TERM
 
 [[ $EUID -eq 0 ]] || { echo 'Run this installer with sudo.' >&2; exit 1; }
 for command in whiptail lsblk sfdisk partprobe udevadm mkfs.ext4 mkfs.fat \
     rsync mount umount mountpoint chroot grub-install update-grub blkid swapon \
-    awk grep sed sleep dpkg; do
-    command -v "$command" >/dev/null || { echo "Required command missing: $command" >&2; exit 1; }
+    awk grep sed sleep dpkg sync; do
+    type -P "$command" >/dev/null || { echo "Required command missing: $command" >&2; exit 1; }
 done
 if [[ ! -t 0 || ! -t 1 ]]; then
     echo 'The installer needs an interactive terminal. Run it from a local console.' >&2
@@ -164,12 +182,59 @@ CONFIRM=$(whiptail --title 'Final confirmation' --inputbox \
 if [[ $DISK =~ [0-9]$ ]]; then SEP=p; else SEP=; fi
 EFI_PART="${DISK}${SEP}1"
 ROOT_PART="${DISK}${SEP}2"
-step() { whiptail --title 'Installing PersisOS Server' --infobox "$1" 8 72; }
+# Keep the gauge alive while commands run, including commands that produce no
+# output. Stage percentages are approximate; the copy percentage comes from rsync.
+step() {
+    printf '%s\n%s\n' "$1" "$2" >"$PROGRESS_DIR/stage.new"
+    mv "$PROGRESS_DIR/stage.new" "$PROGRESS_DIR/stage"
+}
+progress_stream() {
+    # This display process must never run the installer's error/exit cleanup.
+    trap - EXIT ERR INT TERM
+    local percent=0 description='Starting installation...' copy_percent=0 value
+    local started=$SECONDS elapsed pulse=0 dots='...'
+    while [[ ! -e $PROGRESS_DIR/stop ]]; do
+        if [[ -f $PROGRESS_DIR/stage ]]; then
+            { read -r percent; read -r description; } <"$PROGRESS_DIR/stage"
+        fi
+        if [[ $percent == 15 && -f $PROGRESS_DIR/copy ]]; then
+            value=$(cat "$PROGRESS_DIR/copy")
+            if [[ $value =~ ^[0-9]+$ ]] && (( value <= 100 )); then
+                copy_percent=$value
+            fi
+            percent=$((15 + copy_percent * 65 / 100))
+            description="Step 3 of 6: Copying system files: ${copy_percent}% of file data copied"
+        fi
+        elapsed=$((SECONDS - started))
+        printf 'XXX\n%s\nDisk: %s    Hostname: %s\n\n%s\n\nElapsed: %02d:%02d    Working%s\nOverall progress is approximate. Please keep the power on.\n\nInstallation log: %s\nXXX\n' \
+            "$percent" "$DISK" "$HOSTNAME" "$description" \
+            "$((elapsed / 60))" "$((elapsed % 60))" \
+            "${dots:0:pulse+1}" "$LOG"
+        pulse=$(((pulse + 1) % 3))
+        sleep 1
+    done
+}
+start_progress() {
+    PROGRESS_DIR=$(mktemp -d /tmp/persisos-progress.XXXXXX)
+    step 0 'Preparing installation...'
+    # Redirect the whole job so the background shell keeps access to the TTY.
+    # Only the gauge consumes the pipe; installation stays in the parent shell.
+    # Reserve prompt rows up front: newt does not grow a one-line textbox
+    # when later gauge updates contain multiple lines.
+    (
+        trap - EXIT ERR INT TERM
+        progress_stream | whiptail --title 'Installing PersisOS Server' \
+            --gauge $'Preparing installation...\n\n\n\n\n\n\n\n' 16 76 0
+    ) < /dev/tty &
+    PROGRESS_PID=$!
+}
+
 run_logged() {
     "$@" >>"$LOG" 2>&1 || fail "A required installation step failed:\n$*"
 }
 
-step 'Preparing disk partitions...'
+start_progress
+step 2 'Step 1 of 6: Preparing disk partitions...'
 if [[ $MODE == uefi ]]; then
     printf 'label: gpt\n,512M,U\n,,L\n' | sfdisk "$DISK" >>"$LOG" 2>&1 || fail 'Could not partition the selected disk.'
 else
@@ -180,7 +245,7 @@ run_logged udevadm settle
 for _ in {1..15}; do [[ -b "$ROOT_PART" ]] && break; sleep 1; done
 [[ -b "$ROOT_PART" ]] || fail 'The root partition did not appear after partitioning.'
 
-step 'Formatting system partitions...'
+step 7 'Step 2 of 6: Formatting and mounting system partitions...'
 if [[ $MODE == uefi ]]; then run_logged mkfs.fat -F32 -n PERSISOS_EFI "$EFI_PART"; fi
 run_logged mkfs.ext4 -F -L PERSISOS_ROOT "$ROOT_PART"
 mkdir -p "$TARGET"
@@ -190,14 +255,25 @@ if [[ $MODE == uefi ]]; then
     run_logged mount "$EFI_PART" "$TARGET/boot/efi"
 fi
 
-step 'Copying the live system to disk. This can take several minutes...'
-run_logged rsync -aHAX --numeric-ids --delete \
+step 15 'Step 3 of 6: Scanning and copying the live system...'
+rsync -aHAX --numeric-ids --delete --info=progress2 --no-inc-recursive --outbuf=L \
     --exclude=/dev/ --exclude=/proc/ --exclude=/sys/ --exclude=/run/ \
     --exclude=/tmp/ --exclude=/mnt/ --exclude=/media/ --exclude=/live/ \
     --exclude=/var/tmp/ --exclude=/etc/fstab --exclude=/etc/mtab \
-    / "$TARGET/"
+    / "$TARGET/" 2>>"$LOG" | LC_ALL=C awk -v logfile="$LOG" -v progress="$PROGRESS_DIR/copy" '
+        BEGIN { RS = "[\r\n]" }
+        NF {
+            print $0 >> logfile
+            fflush(logfile)
+            if ($2 ~ /^[0-9]+%$/) {
+                sub(/%$/, "", $2)
+                print $2 > progress
+                close(progress)
+            }
+        }
+    ' || fail 'Could not copy the live system to the selected disk.'
 
-step 'Configuring hostname, administrator account, and filesystem mounts...'
+step 80 'Step 4 of 6: Configuring the server and administrator account...'
 rm -f "$TARGET/etc/systemd/system/multi-user.target.wants/persisos-installer.service"
 printf '%s\n' "$HOSTNAME" >"$TARGET/etc/hostname"
 printf '%s\n' "$TIMEZONE" >"$TARGET/etc/timezone"
@@ -223,7 +299,7 @@ rm -f "$TARGET/etc/machine-id" "$TARGET/var/lib/dbus/machine-id"
 rm -f "$TARGET"/etc/ssh/ssh_host_* "$TARGET/var/lib/systemd/random-seed"
 run_logged chroot "$TARGET" ssh-keygen -A
 
-step 'Mounting system interfaces and installing the bootloader...'
+step 88 'Step 5 of 6: Installing the bootloader...'
 mkdir -p "$TARGET/dev/pts" "$TARGET/proc" "$TARGET/sys" "$TARGET/run"
 run_logged mount --rbind /dev "$TARGET/dev"
 run_logged mount -t proc proc "$TARGET/proc"
@@ -239,7 +315,10 @@ if [[ $MODE == uefi ]]; then
 else
     run_logged chroot "$TARGET" grub-install --target=i386-pc "$DISK"
 fi
+step 94 'Step 6 of 6: Generating the boot menu and syncing files to disk...'
 run_logged chroot "$TARGET" update-grub
+run_logged sync
+stop_progress
 
 whiptail --title 'Installation complete' --msgbox \
     "PersisOS Server is installed on $DISK.\n\nHostname: $HOSTNAME\nTime zone: $TIMEZONE\nBoot mode: $MODE\n\nRemove the installation media before rebooting." \
